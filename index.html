@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Калькулятор">
+<title>Калькулятор · RU → USDT → Rapira</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  :root {
+    --bg:#0e1116; --card:#171c24; --line:#303846; --text:#e8eef6; --muted:#93a0b0;
+    --green:#3dd68c; --red:#ff6b6b; --ghost:#222833;
+  }
+  html[data-theme="light"] {
+    --bg:#f4f7fb; --card:#fff; --line:#d5deea; --text:#172033; --muted:#5d6b7c;
+    --green:#0d8a45; --red:#c42323; --ghost:#eef2f6;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.4 "Segoe UI", system-ui, sans-serif; font-variant-numeric:tabular-nums; }
+  header, main, footer { width:min(1500px, calc(100% - 24px)); margin:0 auto; }
+  header { padding:22px 0 8px; display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+  h1 { font-size:26px; margin:0 0 6px; }
+  h2 { font-size:20px; margin:18px 0 10px; }
+  h2:first-child { margin-top:0; }
+  p { margin:0 0 8px; }
+  .muted { color:var(--muted); font-size:14px; }
+  button { border:1px solid var(--line); background:var(--card); color:var(--text); border-radius:8px; padding:8px 12px; font:inherit; cursor:pointer; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin:14px 0; }
+  .wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; min-width:1280px; }
+  th, td { padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:top; text-align:right; }
+  th:first-child, td:first-child, th:nth-child(5), td:nth-child(5) { text-align:left; }
+  th { color:var(--muted); font-size:13px; font-weight:650; }
+  td:first-child { font-weight:650; white-space:nowrap; }
+  table.pass th, table.pass td { text-align:left; }
+  .pos { color:var(--green); font-weight:700; }
+  .neg { color:var(--red); font-weight:700; }
+  tr.ghost td { background:var(--ghost); color:var(--muted); }
+  tr.win td { background:color-mix(in srgb, var(--green) 12%, transparent); }
+  tr.loss td { background:color-mix(in srgb, var(--red) 12%, transparent); }
+  tr.sum td { font-weight:700; }
+  footer { margin:8px auto 28px; color:var(--muted); font-size:13px; }
+  nav.tabs { width:min(1500px, calc(100% - 24px)); margin:8px auto 0; display:flex; gap:8px; flex-wrap:wrap; }
+  nav.tabs button.on { border-color:var(--green); color:var(--green); }
+  .panel[hidden] { display:none; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin:12px 0; }
+  label.field { display:flex; flex-direction:column; gap:6px; color:var(--muted); font-size:14px; }
+  input[type="number"], select { font:18px/1.2 "Segoe UI", system-ui, sans-serif; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--text); }
+  select { min-height:42px; }
+  table.sbp th, table.sbp td { text-align:right; }
+  table.sbp th:first-child, table.sbp td:first-child { text-align:left; }
+  table.sbp th:nth-child(5), table.sbp td:nth-child(5) { text-align:right; }
+  .tops { display:flex; flex-direction:column; gap:10px; margin:12px 0; }
+  .top-row { display:grid; grid-template-columns:minmax(140px, 1fr) minmax(220px, 1.4fr) auto; gap:10px; align-items:end; border:1px solid var(--line); border-radius:10px; padding:10px; background:var(--bg); }
+  .top-opts { display:flex; flex-direction:column; gap:8px; color:var(--muted); font-size:14px; }
+  .top-opts label { display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--text); min-height:28px; }
+  .tops-actions { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
+  .tops-actions button { min-height:44px; }
+  .calc-cards { display:none; flex-direction:column; gap:10px; margin-top:12px; }
+  .calc-card {
+    border:1px solid var(--line); border-radius:12px; padding:12px;
+    background:var(--bg); display:flex; flex-direction:column; gap:6px;
+  }
+  .calc-card.win { border-color:color-mix(in srgb, var(--green) 55%, var(--line)); background:color-mix(in srgb, var(--green) 10%, var(--bg)); }
+  .calc-card.loss { border-color:color-mix(in srgb, var(--red) 55%, var(--line)); background:color-mix(in srgb, var(--red) 10%, var(--bg)); }
+  .calc-card.ghost { opacity:0.85; }
+  .calc-card .title { font-weight:700; font-size:15px; line-height:1.35; word-break:break-word; }
+  .calc-card .rows { display:grid; grid-template-columns:1fr 1fr; gap:6px 10px; font-size:14px; }
+  .calc-card .rows span { color:var(--muted); display:block; font-size:12px; }
+  .calc-card .rows b { font-weight:650; color:var(--text); }
+  .calc-card .profit { font-size:22px; font-weight:800; margin-top:4px; }
+  .phone-hint { display:none; }
+  @media (max-width: 768px) {
+    header, main, footer, nav.tabs { width:auto; margin-left:10px; margin-right:10px; }
+    header { padding-top:max(12px, env(safe-area-inset-top)); gap:8px; flex-wrap:wrap; }
+    h1 { font-size:20px; }
+    h2 { font-size:17px; }
+    section { padding:10px; margin:8px 0; border-radius:14px; }
+    .wrap { overflow-x:auto; max-width:100%; -webkit-overflow-scrolling:touch; }
+    input[type="number"], select { min-height:48px; font-size:16px; padding:12px; width:100%; }
+    nav.tabs { position:sticky; top:0; z-index:20; background:var(--bg); padding:8px 0; gap:6px; }
+    nav.tabs button { min-height:44px; flex:1 1 auto; font-size:14px; padding:10px 8px; }
+    .top-row { grid-template-columns:1fr; }
+    .top-opts label { min-height:44px; padding:6px 0; }
+    .grid { grid-template-columns:1fr; gap:10px; }
+    #panel-calc .wrap { display:none; }
+    .calc-cards { display:flex; }
+    .phone-hint { display:block; margin:0 0 10px; }
+    body { padding-bottom:max(24px, env(safe-area-inset-bottom)); }
+    #theme { min-height:44px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Ввод рублей → покупка USDT → Rapira</h1>
+    <p class="muted" id="lead">17.10.2026. Три шага: ввод, покупка, вывод. 1 USDT на выходе = 87,29 ₽. Комиссия 0,08 ₽ второй раз не вычитается.</p>
+  </div>
+  <button type="button" id="theme">Светлая тема</button>
+</header>
+<nav class="tabs">
+  <button type="button" id="tabCalc" class="on">Калькулятор</button>
+  <button type="button" id="tabReport">Отчёт</button>
+</nav>
+<main>
+<div id="panel-report" class="panel" hidden>
+<section>
+  <h2>Паспорт комиссий</h2>
+  <div class="wrap">
+    <table class="pass">
+      <thead><tr><th>№</th><th>Биржа</th><th>Межбанк</th><th>СБП</th><th>Карты / SberPay</th><th>Покупка</th><th>Курс</th><th>Вывод USDT</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Tradex</td><td>Прочерк. В расчёте 0 ₽ площадки</td><td>1,8%. Операция до 100 000 ₽</td><td>SberPay 2,5%. До 100 000 ₽</td><td>Тейкер 0,2%</td><td>84,36 ₽ / 84,42 ₽</td><td>5 USDT</td></tr>
+        <tr><td>2</td><td>Cifra</td><td>0% или банки РФ 0,15%</td><td>0,7%, не больше 1 500 ₽</td><td>Безнал 0%. Наличные 1%</td><td>1,50% после сделки</td><td>Ask 84,18 ₽</td><td>10 USDT</td></tr>
+        <tr><td>3</td><td>BYNEX</td><td>0% BYNEX. Мгновенный: сутки 75 000 ₽</td><td>СБП РФ нет</td><td>0,45% / 2,00% / 2,5%</td><td>Тейкер 0,25%</td><td>Ask 85,91 ₽</td><td>5 USDT BEP-20</td></tr>
+        <tr><td>4</td><td>Free2ex</td><td>0%</td><td>1,8%</td><td>SberPay 1,8%. Карты 3%</td><td>Тейкер 1,75%</td><td>Стакан не загружен</td><td>2 USDT</td></tr>
+        <tr><td>5</td><td>Comes</td><td>0% площадки</td><td>Нет</td><td>Нет</td><td>Тейкер 0,25%</td><td>60 USDT</td><td>10 USDT</td></tr>
+        <tr class="ghost"><td>6</td><td>Broker</td><td>По счёту. Банк не известен</td><td>Нет</td><td>Нет</td><td>0,83 ₽ на 1 USDT</td><td>84,58 ₽ с комиссией</td><td>Тариф не загружен</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Выгрузка BYNEX от 16.10 расходится с заданием 17.10 по картам. В API Цифры есть тариф 1,90%. В ячейках взят 1,50%.</p>
+</section>
+
+<section>
+  <h2>100 000 ₽, межбанк</h2>
+  <div class="wrap"><table>
+    <thead><tr><th>Площадка</th><th>1. Вход</th><th>2. Ввод</th><th>3. На бирже</th><th>4. Курс + комиссия</th><th>5. Куплено</th><th>6. Вывод</th><th>7. На Rapira</th><th>8. Выход 87,29</th><th>9. Прибыль</th></tr></thead>
+    <tbody>
+      <tr class="win"><td>Tradex</td><td>100 000</td><td>0 ₽ площадки</td><td>100 000</td><td>84,36 ₽ уже с тейкером 0,2%</td><td>1 185,4208</td><td>5</td><td>1 180,4208</td><td>103 038,93</td><td class="pos">+3 038,93</td></tr>
+      <tr><td>Cifra, 0%</td><td>100 000</td><td>0</td><td>100 000</td><td>84,18 ₽ + 1 477,83 ₽</td><td>1 170,3750</td><td>10</td><td>1 160,3750</td><td>101 289,13</td><td class="pos">+1 289,13</td></tr>
+      <tr><td>Cifra, банки РФ</td><td>100 000</td><td>150</td><td>99 850</td><td>84,18 ₽ + 1 475,62 ₽</td><td>1 168,6194</td><td>10</td><td>1 158,6194</td><td>101 135,89</td><td class="pos">+1 135,89</td></tr>
+      <tr><td>BYNEX, рынок</td><td>100 000</td><td>0</td><td>100 000</td><td>85,91 ₽ + 249,38 ₽</td><td>1 161,1061</td><td>5</td><td>1 156,1061</td><td>100 916,50</td><td class="pos">+916,50</td></tr>
+      <tr><td>BYNEX, лимитка</td><td>100 000</td><td>0</td><td>100 000</td><td>Bid 84,15 ₽ + мейкер 0,025%</td><td>1 188,0571</td><td>5</td><td>1 183,0571</td><td>103 269,06</td><td class="pos">+3 269,06, если исполнят</td></tr>
+      <tr class="ghost"><td>Broker</td><td>100 000</td><td>0 у площадки</td><td>100 000</td><td>84,58 ₽</td><td>1 182,31</td><td>Тариф не загружен</td><td>—</td><td>—</td><td>Тариф на вывод USDT не загружен — прибыль не рассчитывается</td></tr>
+      <tr class="ghost"><td>Free2ex</td><td>100 000</td><td>0</td><td>100 000</td><td>Тейкер 1,75%. Курса нет</td><td>—</td><td>2</td><td>—</td><td>—</td><td>Не считается</td></tr>
+      <tr class="loss"><td>Comes</td><td>100 000</td><td>0</td><td>100 000</td><td>В книге 60 USDT</td><td>Не вмещает</td><td>10</td><td>—</td><td>—</td><td class="neg">На 50 USDT −737,95</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>300 000 ₽, межбанк</h2>
+  <div class="wrap"><table>
+    <thead><tr><th>Площадка</th><th>1. Вход</th><th>2. Ввод</th><th>3. На бирже</th><th>4. Курс + комиссия</th><th>5. Куплено</th><th>6. Вывод</th><th>7. На Rapira</th><th>8. Выход 87,29</th><th>9. Прибыль</th></tr></thead>
+    <tbody>
+      <tr class="win"><td>Tradex</td><td>300 000</td><td>0 ₽ площадки</td><td>300 000</td><td>84,42 ₽ уже с тейкером 0,2%</td><td>3 553,4776</td><td>5</td><td>3 548,4776</td><td>309 746,61</td><td class="pos">+9 746,61</td></tr>
+      <tr><td>Cifra, 0%</td><td>300 000</td><td>0</td><td>300 000</td><td>84,18 ₽ + 4 433,50 ₽</td><td>3 511,1250</td><td>10</td><td>3 501,1250</td><td>305 613,20</td><td class="pos">+5 613,20</td></tr>
+      <tr><td>Cifra, банки РФ</td><td>300 000</td><td>450</td><td>299 550</td><td>84,18 ₽ + 4 426,85 ₽</td><td>3 505,8583</td><td>10</td><td>3 495,8583</td><td>305 153,47</td><td class="pos">+5 153,47</td></tr>
+      <tr><td>BYNEX, рынок</td><td>300 000</td><td>0</td><td>300 000</td><td>85,91 ₽ + 748,13 ₽</td><td>3 483,3182</td><td>5</td><td>3 478,3182</td><td>303 622,40</td><td class="pos">+3 622,40</td></tr>
+      <tr class="ghost"><td>BYNEX, лимитка</td><td>300 000</td><td>0</td><td>—</td><td>В книге 3 108,40 USDT</td><td>Не хватает</td><td>5</td><td>—</td><td>—</td><td>Не считается</td></tr>
+      <tr class="ghost"><td>Broker</td><td>300 000</td><td>0 у площадки</td><td>300 000</td><td>84,58 ₽</td><td>3 546,94</td><td>Тариф не загружен</td><td>—</td><td>—</td><td>Тариф на вывод USDT не загружен — прибыль не рассчитывается</td></tr>
+      <tr class="ghost"><td>Free2ex</td><td>300 000</td><td>0</td><td>300 000</td><td>Курса нет</td><td>—</td><td>2</td><td>—</td><td>—</td><td>Не считается</td></tr>
+      <tr class="loss"><td>Comes</td><td>300 000</td><td>0</td><td>300 000</td><td>В книге 60 USDT</td><td>Не вмещает</td><td>10</td><td>—</td><td>—</td><td>Не вмещает</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>100 000 ₽, быстрый круг</h2>
+  <div class="wrap"><table>
+    <thead><tr><th>Площадка</th><th>1. Вход</th><th>2. Ввод</th><th>3. На бирже</th><th>4. Курс + комиссия</th><th>5. Куплено</th><th>6. Вывод</th><th>7. На Rapira</th><th>8. Выход 87,29</th><th>9. Прибыль</th></tr></thead>
+    <tbody>
+      <tr class="win"><td>Tradex, СБП</td><td>100 000</td><td>1 800</td><td>98 200</td><td>84,36 ₽ уже с тейкером 0,2%</td><td>1 164,0909</td><td>5</td><td>1 159,0909</td><td>101 177,04</td><td class="pos">+1 177,04</td></tr>
+      <tr><td>Cifra, безнал 0%</td><td>100 000</td><td>0</td><td>100 000</td><td>84,18 ₽ + 1 477,83 ₽</td><td>1 170,3750</td><td>10</td><td>1 160,3750</td><td>101 289,13</td><td class="pos">+1 289,13</td></tr>
+      <tr><td>Cifra, СБП</td><td>100 000</td><td>700</td><td>99 300</td><td>84,18 ₽ + 1 467,49 ₽</td><td>1 162,1824</td><td>10</td><td>1 152,1824</td><td>100 574,00</td><td class="pos">+574,00</td></tr>
+      <tr><td>BYNEX, 0,45%</td><td>100 000</td><td>450</td><td>99 550</td><td>85,91 ₽ + 248,25 ₽</td><td>1 155,8811</td><td>5</td><td>1 150,8811</td><td>100 460,41</td><td class="pos">+460,41</td></tr>
+      <tr><td>BYNEX, 75 000 ₽</td><td>75 000</td><td>0</td><td>75 000</td><td>85,91 ₽ + 187,03 ₽</td><td>870,8296</td><td>5</td><td>865,8296</td><td>75 578,26</td><td class="pos">+578,26</td></tr>
+      <tr><td>Tradex, SberPay</td><td>100 000</td><td>2 500</td><td>97 500</td><td>84,36 ₽ уже с тейкером 0,2%</td><td>1 155,7959</td><td>5</td><td>1 150,7959</td><td>100 452,97</td><td class="pos">+452,97</td></tr>
+      <tr><td>Cifra, нал 1%</td><td>100 000</td><td>1 000</td><td>99 000</td><td>84,18 ₽ + 1 463,05 ₽</td><td>1 158,6712</td><td>10</td><td>1 148,6712</td><td>100 267,51</td><td class="pos">+267,51</td></tr>
+      <tr class="loss"><td>BYNEX, Assist 2%</td><td>100 000</td><td>2 000</td><td>98 000</td><td>85,91 ₽ + 244,39 ₽</td><td>1 137,8840</td><td>5</td><td>1 132,8840</td><td>98 889,44</td><td class="neg">−1 110,56</td></tr>
+      <tr class="loss"><td>BYNEX, bePaid 2,5%</td><td>100 000</td><td>2 500</td><td>97 500</td><td>85,91 ₽ + 243,14 ₽</td><td>1 132,0784</td><td>5</td><td>1 127,0784</td><td>98 382,68</td><td class="neg">−1 617,32</td></tr>
+      <tr class="ghost"><td>Free2ex</td><td>100 000</td><td>1,8% или 3%</td><td>—</td><td>Курса нет. СБП + тейкер = 3,55 п.п.</td><td>—</td><td>2</td><td>—</td><td>—</td><td>Не считается</td></tr>
+      <tr class="ghost"><td>Comes и Broker</td><td>—</td><td>Быстрого ввода нет</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>Не считается</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>300 000 ₽, быстрый круг</h2>
+  <div class="wrap"><table>
+    <thead><tr><th>Площадка</th><th>1. Вход</th><th>2. Ввод</th><th>3. На бирже</th><th>4. Курс + комиссия</th><th>5. Куплено</th><th>6. Вывод</th><th>7. На Rapira</th><th>8. Выход 87,29</th><th>9. Прибыль</th></tr></thead>
+    <tbody>
+      <tr class="win"><td>Cifra, СБП</td><td>300 000</td><td>1 500</td><td>298 500</td><td>84,18 ₽ + 4 411,33 ₽</td><td>3 493,5694</td><td>10</td><td>3 483,5694</td><td>304 080,77</td><td class="pos">+4 080,77</td></tr>
+      <tr class="win"><td>Tradex, 1 вывод</td><td>300 000</td><td>5 400</td><td>294 600</td><td>84,36 → 84,42 → 84,49</td><td>3 489,5788</td><td>5</td><td>3 484,5788</td><td>304 168,88</td><td class="pos">+4 168,88</td></tr>
+      <tr><td>Tradex, 3 вывода</td><td>300 000</td><td>5 400</td><td>294 600</td><td>Те же три прохода</td><td>3 489,5788</td><td>15</td><td>3 474,5788</td><td>303 295,98</td><td class="pos">+3 295,98</td></tr>
+      <tr><td>Cifra, безнал 0%</td><td>300 000</td><td>0</td><td>300 000</td><td>84,18 ₽ + 4 433,50 ₽</td><td>3 511,1250</td><td>10</td><td>3 501,1250</td><td>305 613,20</td><td class="pos">+5 613,20</td></tr>
+      <tr><td>BYNEX, 0,45%</td><td>300 000</td><td>1 350</td><td>298 650</td><td>85,91 ₽ + 744,76 ₽</td><td>3 467,6433</td><td>5</td><td>3 462,6433</td><td>302 254,13</td><td class="pos">+2 254,13</td></tr>
+      <tr><td>Cifra, нал 1%</td><td>300 000</td><td>3 000</td><td>297 000</td><td>84,18 ₽ + 4 389,16 ₽</td><td>3 476,0137</td><td>10</td><td>3 466,0137</td><td>302 548,34</td><td class="pos">+2 548,34</td></tr>
+      <tr><td>Tradex, SberPay</td><td>300 000</td><td>7 500</td><td>292 500</td><td>Три прохода по 100 000 ₽</td><td>3 464,7293</td><td>15</td><td>3 449,7293</td><td>301 126,87</td><td class="pos">+1 126,87</td></tr>
+      <tr class="loss"><td>BYNEX, Assist 2%</td><td>300 000</td><td>6 000</td><td>294 000</td><td>85,91 ₽ + 733,17 ₽</td><td>3 413,6519</td><td>5</td><td>3 408,6519</td><td>297 541,22</td><td class="neg">−2 458,78</td></tr>
+      <tr class="loss"><td>BYNEX, bePaid 2,5%</td><td>300 000</td><td>7 500</td><td>292 500</td><td>85,91 ₽ + 729,43 ₽</td><td>3 396,2353</td><td>5</td><td>3 391,2353</td><td>296 020,93</td><td class="neg">−3 979,07</td></tr>
+      <tr class="ghost"><td>Free2ex</td><td>300 000</td><td>1,8% или 3%</td><td>—</td><td>Курса нет</td><td>—</td><td>2</td><td>—</td><td>—</td><td>Не считается</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Tradex, круги СБП. Стакан не восстанавливается</h2>
+  <p class="muted">Три копии первого круга дали бы +3 531,12 ₽. Последовательный проход даёт +3 295,98 ₽: второй и третий круги дороже. Четвёртый круг книга не закрывает.</p>
+  <div class="wrap"><table>
+    <thead><tr><th>Круг</th><th>1. Вход</th><th>2. Ввод</th><th>3. На бирже</th><th>4. Курс + комиссия</th><th>5. Куплено</th><th>6. Вывод</th><th>7. На Rapira</th><th>8. Выход 87,29</th><th>9. Прибыль</th></tr></thead>
+    <tbody>
+      <tr class="win"><td>1</td><td>100 000</td><td>1 800</td><td>98 200</td><td>84,36 ₽ с тейкером</td><td>1 164,0909</td><td>5</td><td>1 159,0909</td><td>101 177,04</td><td class="pos">+1 177,04</td></tr>
+      <tr><td>2</td><td>100 000</td><td>1 800</td><td>98 200</td><td>84,42 ₽ с тейкером</td><td>1 163,1995</td><td>5</td><td>1 158,1995</td><td>101 099,24</td><td class="pos">+1 099,24</td></tr>
+      <tr><td>3</td><td>100 000</td><td>1 800</td><td>98 200</td><td>84,49 ₽ с тейкером</td><td>1 162,2884</td><td>5</td><td>1 157,2884</td><td>101 019,71</td><td class="pos">+1 019,71</td></tr>
+      <tr class="sum"><td>Сумма 3</td><td>300 000</td><td>5 400</td><td>294 600</td><td>Три разных средних</td><td>3 489,5788</td><td>15</td><td>3 474,5788</td><td>303 295,98</td><td class="pos">+3 295,98</td></tr>
+      <tr class="win"><td>3 ввода, 1 вывод</td><td>300 000</td><td>5 400</td><td>294 600</td><td>Те же три прохода</td><td>3 489,5788</td><td>5</td><td>3 484,5788</td><td>304 168,88</td><td class="pos">+4 168,88</td></tr>
+      <tr class="ghost"><td>4</td><td>100 000</td><td>1 800</td><td>98 200</td><td>В книге осталось 21 567,79 ₽</td><td>Круг не закрыт</td><td>—</td><td>—</td><td>—</td><td>В план не входит</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Cifra, свой вывод на каждом круге</h2>
+  <p class="muted">Ask 84,18 не сдвигается, уровень 45 156,36 USDT вмещает четыре круга по 300 000 ₽. Поэтому круги совпали. СБП и 1,50% удержаны в каждой строке заново. Итог — сумма строк.</p>
+  <div class="wrap"><table>
+    <thead><tr><th>Круг</th><th>1. Вход</th><th>2. Ввод</th><th>3. На бирже</th><th>4. Курс + комиссия</th><th>5. Куплено</th><th>6. Вывод</th><th>7. На Rapira</th><th>8. Выход 87,29</th><th>9. Прибыль</th></tr></thead>
+    <tbody>
+      <tr><td>1 × 100 000</td><td>100 000</td><td>700</td><td>99 300</td><td>84,18 ₽ + 1 467,49 ₽</td><td>1 162,1824</td><td>10</td><td>1 152,1824</td><td>100 574,00</td><td class="pos">+574,00</td></tr>
+      <tr><td>2 × 100 000</td><td>100 000</td><td>700</td><td>99 300</td><td>84,18 ₽ + 1 467,49 ₽</td><td>1 162,1824</td><td>10</td><td>1 152,1824</td><td>100 574,00</td><td class="pos">+574,00</td></tr>
+      <tr><td>3 × 100 000</td><td>100 000</td><td>700</td><td>99 300</td><td>84,18 ₽ + 1 467,49 ₽</td><td>1 162,1824</td><td>10</td><td>1 152,1824</td><td>100 574,00</td><td class="pos">+574,00</td></tr>
+      <tr class="sum"><td>Сумма 3 × 100 000</td><td>300 000</td><td>2 100</td><td>297 900</td><td>Три раза по 1 467,49 ₽</td><td>3 486,5471</td><td>30</td><td>3 456,5471</td><td>301 722,00</td><td class="pos">+1 722,00</td></tr>
+      <tr class="sum"><td>Сумма 4 × 100 000</td><td>400 000</td><td>2 800</td><td>397 200</td><td>Четыре раза по 1 467,49 ₽</td><td>4 648,7295</td><td>40</td><td>4 608,7295</td><td>402 296,00</td><td class="pos">+2 296,00</td></tr>
+      <tr><td>1 × 300 000</td><td>300 000</td><td>1 500</td><td>298 500</td><td>84,18 ₽ + 4 411,33 ₽</td><td>3 493,5694</td><td>10</td><td>3 483,5694</td><td>304 080,77</td><td class="pos">+4 080,77</td></tr>
+      <tr class="sum"><td>Сумма 3 × 300 000</td><td>900 000</td><td>4 500</td><td>895 500</td><td>Три раза по 4 411,33 ₽</td><td>10 480,7081</td><td>30</td><td>10 450,7081</td><td>912 242,31</td><td class="pos">+12 242,31</td></tr>
+      <tr class="sum"><td>Сумма 4 × 300 000</td><td>1 200 000</td><td>6 000</td><td>1 194 000</td><td>Четыре раза по 4 411,33 ₽</td><td>13 974,2775</td><td>40</td><td>13 934,2775</td><td>1 216 323,08</td><td class="pos">+16 323,08</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Cifra, один вывод в конце цепочки</h2>
+  <p class="muted">Пополнение и 1,50% на каждом круге те же. Сетевой сбор 10 USDT один. На трёх кругах это на 1 745,80 ₽ больше, чем три своих вывода. На четырёх — на 2 618,70 ₽.</p>
+  <div class="wrap"><table>
+    <thead><tr><th>Цепочка</th><th>1. Вход</th><th>2. Ввод</th><th>3. На бирже</th><th>4. Курс + комиссия</th><th>5. Куплено</th><th>6. Вывод</th><th>7. На Rapira</th><th>8. Выход 87,29</th><th>9. Прибыль</th></tr></thead>
+    <tbody>
+      <tr class="win"><td>3 × 100 000</td><td>300 000</td><td>2 100</td><td>297 900</td><td>Три раза по 1 467,49 ₽</td><td>3 486,5471</td><td>10</td><td>3 476,5471</td><td>303 467,80</td><td class="pos">+3 467,80</td></tr>
+      <tr class="win"><td>4 × 100 000</td><td>400 000</td><td>2 800</td><td>397 200</td><td>Четыре раза по 1 467,49 ₽</td><td>4 648,7295</td><td>10</td><td>4 638,7295</td><td>404 914,70</td><td class="pos">+4 914,70</td></tr>
+      <tr class="win"><td>3 × 300 000</td><td>900 000</td><td>4 500</td><td>895 500</td><td>Три раза по 4 411,33 ₽</td><td>10 480,7081</td><td>10</td><td>10 470,7081</td><td>913 988,11</td><td class="pos">+13 988,11</td></tr>
+      <tr class="win"><td>4 × 300 000</td><td>1 200 000</td><td>6 000</td><td>1 194 000</td><td>Четыре раза по 4 411,33 ₽</td><td>13 974,2775</td><td>10</td><td>13 964,2775</td><td>1 218 941,78</td><td class="pos">+18 941,78</td></tr>
+    </tbody>
+  </table></div>
+</section>
+</div>
+<div id="panel-calc" class="panel">
+<section>
+  <h2>Калькулятор: Цифра, Tradex, Хайс, Whitebird и Multitransfer</h2>
+  <p class="muted" id="calcLead">Пополнения вручную: сумма и провайдер. Цифра / Tradex / Хайс — как раньше. Whitebird (салон МТС): минимум <b>10 000 ₽</b>, сервис 2%, сеть выбирается ниже (BEP-20 по умолчанию), продажа на Rapira −0,10% (тейкер, бронза). <b>Multitransfer</b> (сводная таблица пользователя): комиссия <b>2,0%</b>; лимит за раз <b>400 000 ₽</b>; в сутки <b>800 000 ₽</b>; в месяц <b>1 000 000 ₽</b>.</p>
+  <div class="grid">
+    <label class="field">Выход Rapira, ₽ за 1 USDT<input id="out" type="number" min="0" step="0.01" value="84.26"></label>
+    <label class="field">Ask Цифры, ₽<input id="cAsk" type="number" min="0" step="0.01" value="84.18"></label>
+    <label class="field">Курс Хайс / Криптохаб, ₽<input id="hAsk" type="number" min="0" step="0.01" value="84.50"></label>
+    <label class="field">Курс Whitebird (покупка), ₽<input id="wbAsk" type="number" min="0" step="0.0001" value="81.1738"></label>
+    <label class="field">Сеть Whitebird (для USDT)
+      <select id="wbNetSelect">
+        <option value="bep20" selected>BNB Smart Chain (BEP-20) · сеть ≈ 0,0089 USDT</option>
+        <option value="erc20">Ethereum (ERC-20) · сеть ≈ 0,0089 USDT</option>
+        <option value="trc20">Tron (TRC-20) · сеть ≈ 1 USDT</option>
+        <option value="polygon">Polygon · сеть ≈ 0,01 USDT</option>
+        <option value="custom">Своя комиссия сети (поле ниже)</option>
+      </select>
+    </label>
+    <label class="field">Комиссия сети Whitebird, USDT<input id="wbNet" type="number" min="0" step="0.00000001" value="0.00889704"></label>
+    <label class="field">Режим вывода Цифры<!-- только direct|bitget -->
+      <select id="cfExit">
+      <option value="direct">1) Напрямую Rapira (Tron/ERC 10)</option>
+      <option value="bitget" selected>2) Через BitGet (Sol/Poly 3,5 → BEP 0,01)</option>
+    </select></label>
+    <label class="field">Курс Tradex, часть 1 (с тейкером 0,2%)<input id="tAsk1" type="number" min="0" step="0.000001" value="84.357676"></label>
+    <label class="field">Курс Tradex, часть 2 (с тейкером 0,2%)<input id="tAsk2" type="number" min="0" step="0.000001" value="84.422318"></label>
+    <label class="field">Курс Tradex, часть 3 и далее (с тейкером 0,2%)<input id="tAsk3" type="number" min="0" step="0.000001" value="84.488495"></label>
+  </div>
+  <h2>Пополнения</h2>
+  <div id="topsList" class="tops"></div>
+  <div class="tops-actions">
+    <button type="button" id="addTop">Добавить пополнение</button>
+  </div>
+  <p id="calcNote" class="muted"></p>
+  <p class="muted phone-hint">На телефоне результат — карточками. Листайте вниз после ввода суммы.</p>
+  <div id="calcCards" class="calc-cards" aria-live="polite"></div>
+  <div class="wrap">
+    <table class="sbp">
+      <thead>
+        <tr><th>Вариант</th><th>Платежей</th><th>2. Комиссия ввода</th><th>3. На бирже</th><th>4. Комиссия сделки</th><th>5. Куплено USDT</th><th>6. Вывод USDT</th><th>7. На Rapira</th><th>8. Выход, ₽</th><th>9. Прибыль, ₽</th></tr>
+      </thead>
+      <tbody id="calcBody"></tbody>
+    </table>
+  </div>
+</section>
+</div>
+</main>
+<footer id="pageFoot">Числа из arbitrage/dashboard.md. Курс 87,29 ₽ задан заданием 17.10.</footer>
+<script>
+  var root = document.documentElement, btn = document.getElementById("theme");
+  if (localStorage.getItem("arb-theme") === "light") root.setAttribute("data-theme", "light");
+  function paint() { btn.textContent = root.getAttribute("data-theme") === "light" ? "Тёмная тема" : "Светлая тема"; }
+  paint();
+  var outEl = document.getElementById("out");
+  var cAskEl = document.getElementById("cAsk");
+  var hAskEl = document.getElementById("hAsk");
+  var wbAskEl = document.getElementById("wbAsk");
+  var wbNetEl = document.getElementById("wbNet");
+  var wbNetSelectEl = document.getElementById("wbNetSelect");
+  var cfExitEl = document.getElementById("cfExit");
+  var tAskEls = [
+    document.getElementById("tAsk1"),
+    document.getElementById("tAsk2"),
+    document.getElementById("tAsk3")
+  ];
+  var HICE_RAPIRA_SELL_FEE = 0.001;
+  var WB_MTS_FEE = 0.02; /* салон МТС: 2% сервиса с суммы заявки (скрины/тариф whitebird.io) */
+  var WB_MIN_RUB = 10000; /* мин. сумма Whitebird по сообщению пользователя / UI */
+  /* Multitransfer — сводная таблица пользователя: 2%; 400 000 / раз; 800 000 / сутки; 1 000 000 / мес */
+  var MT_FEE = 0.02;
+  var MT_LIM_ONCE = 400000;
+  var MT_LIM_DAY = 800000;
+  var MT_LIM_MONTH = 1000000;
+  var WB_NET_PRESETS = {
+    bep20: { label: "BEP-20", fee: 0.00889704 },
+    erc20: { label: "ERC-20", fee: 0.00889704 },
+    trc20: { label: "TRC-20", fee: 1 },
+    polygon: { label: "Polygon", fee: 0.01 },
+    custom: { label: "своя сеть", fee: null }
+  };
+  function syncWbNetFromSelect() {
+    var preset = WB_NET_PRESETS[wbNetSelectEl.value] || WB_NET_PRESETS.custom;
+    if (preset.fee != null) {
+      wbNetEl.value = String(preset.fee);
+      wbNetEl.readOnly = true;
+    } else {
+      wbNetEl.readOnly = false;
+    }
+  }
+  wbNetSelectEl.addEventListener("change", function () {
+    syncWbNetFromSelect();
+    paintCalc();
+  });
+  syncWbNetFromSelect();
+  var topsList = document.getElementById("topsList");
+  var addTopBtn = document.getElementById("addTop");
+  /* Yieldo 19.10.2026: Bitget BEP20 0,01. Цифра Sol/Poly 3,5; Tron/ERC 10. */
+  var BRIDGE = {
+    direct: { label: "напрямую Rapira", hop1: 10, hop2: 0, bridge: "" },
+    bitget: { label: "BitGet", hop1: 3.5, hop2: 0.01, bridge: "BitGet" }
+  };
+  function cifraExitMode() {
+    var k = cfExitEl.value;
+    return BRIDGE[k] || BRIDGE.direct;
+  }
+  function cifraWdPerRound(mode) {
+    return mode.hop1 + mode.hop2;
+  }
+  function cifraExitHint(mode) {
+    if (!mode.bridge) return "Tron/ERC " + fmt(mode.hop1, 0) + " USDT → Rapira";
+    return "Sol/Poly " + fmt(mode.hop1, 1) + " → " + mode.bridge + " BEP " + fmt(mode.hop2, 2) + " → Rapira";
+  }
+  var bodyEl = document.getElementById("calcBody");
+  var cardsEl = document.getElementById("calcCards");
+  var noteEl = document.getElementById("calcNote");
+  var tabReport = document.getElementById("tabReport");
+  var tabCalc = document.getElementById("tabCalc");
+  var leadEl = document.getElementById("lead");
+  var footEl = document.getElementById("pageFoot");
+  var leadReport = leadEl.textContent;
+  var footReport = footEl.textContent;
+  var topSeq = 0;
+  function paintChrome() {
+    var onCalc = !document.getElementById("panel-calc").hidden;
+    if (!onCalc) {
+      leadEl.textContent = leadReport;
+      footEl.textContent = footReport;
+      return;
+    }
+    var rap = readNum(outEl);
+    var rate = rap > 0 ? fmt(rap, 2) + " ₽" : "курс не задан";
+    leadEl.textContent = "Калькулятор. 1 USDT на выходе = " + rate + ". Комиссия 0,08 ₽ второй раз не вычитается.";
+    footEl.textContent = "Калькулятор. Курс выхода Rapira: " + rate + ".";
+  }
+  function showTab(name) {
+    document.getElementById("panel-report").hidden = name !== "report";
+    document.getElementById("panel-calc").hidden = name !== "calc";
+    tabReport.classList.toggle("on", name === "report");
+    tabCalc.classList.toggle("on", name === "calc");
+    paintChrome();
+  }
+  tabReport.addEventListener("click", function () { showTab("report"); });
+  tabCalc.addEventListener("click", function () { showTab("calc"); });
+  function readNum(el) {
+    var n = Number(String(el.value).replace(",", ".").trim());
+    return Number.isFinite(n) ? n : NaN;
+  }
+  function fmt(n, d) {
+    return n.toLocaleString("ru-RU", { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  function tradexRateHint(nParts) {
+    if (!(nParts > 0)) return "";
+    if (nParts === 1) return "курс 1";
+    if (nParts === 2) return "курс 1 → 2";
+    return "курс 1 → 2 → 3";
+  }
+  function addTopRow(amount, provider) {
+    topSeq += 1;
+    var id = topSeq;
+    var row = document.createElement("div");
+    row.className = "top-row";
+    row.dataset.id = String(id);
+    row.innerHTML =
+      "<label class=\"field\">Сумма пополнения, ₽" +
+      "<input class=\"top-amt\" type=\"number\" min=\"0\" step=\"1000\" value=\"" + (amount || "") + "\"></label>" +
+      "<div class=\"top-opts\">" +
+      "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"cifra\"" + (provider === "cifra" ? " checked" : "") + "> Считаем только по Цифре</label>" +
+      "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"tradex\"" + (provider === "tradex" ? " checked" : "") + "> Считаем только по Tradex</label>" +
+      "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"hice\"" + (provider === "hice" ? " checked" : "") + "> Считаем только по Хайс (Криптохаб)</label>" +
+      "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"whitebird\"" + (provider === "whitebird" ? " checked" : "") + "> Считаем только по Whitebird (салон МТС → Rapira)</label>" +
+      "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"multitransfer\"" + (provider === "multitransfer" ? " checked" : "") + "> Multitransfer (2% · до 400 000 / 800 000 сутки / 1 000 000 мес)</label>" +
+      "</div>" +
+      "<button type=\"button\" class=\"top-del\">Удалить</button>";
+    topsList.appendChild(row);
+    row.querySelector(".top-amt").addEventListener("input", paintCalc);
+    Array.prototype.forEach.call(row.querySelectorAll("input[type=radio]"), function (r) {
+      r.addEventListener("change", paintCalc);
+    });
+    row.querySelector(".top-del").addEventListener("click", function () {
+      if (topsList.children.length <= 1) {
+        row.querySelector(".top-amt").value = "";
+        paintCalc();
+        return;
+      }
+      row.remove();
+      paintCalc();
+    });
+  }
+  function readTops() {
+    var list = [];
+    Array.prototype.forEach.call(topsList.children, function (row, idx) {
+      var amt = readNum(row.querySelector(".top-amt"));
+      var checked = row.querySelector("input[type=radio]:checked");
+      list.push({
+        no: idx + 1,
+        amount: amt,
+        provider: checked ? checked.value : ""
+      });
+    });
+    return list;
+  }
+  function paintCalc() {
+    var rap = readNum(outEl), cAsk = readNum(cAskEl), hAsk = readNum(hAskEl);
+    var wbAsk = readNum(wbAskEl), wbNet = readNum(wbNetEl);
+    if (!(wbNet >= 0)) wbNet = 0;
+    var wbNetPreset = WB_NET_PRESETS[wbNetSelectEl.value] || WB_NET_PRESETS.custom;
+    var wbNetLabel = wbNetPreset.label || "сеть";
+    var tRates = tAskEls.map(readNum);
+    var tops = readTops();
+    var needCifra = tops.some(function (t) { return t.provider === "cifra" && t.amount > 0; });
+    var needTradex = tops.some(function (t) { return t.provider === "tradex" && t.amount > 0; });
+    var needHice = tops.some(function (t) { return t.provider === "hice" && t.amount > 0; });
+    var needWb = tops.some(function (t) { return t.provider === "whitebird" && t.amount > 0; });
+    var needMt = tops.some(function (t) { return t.provider === "multitransfer" && t.amount > 0; });
+    var exitMode = cifraExitMode();
+    var exitWd = cifraWdPerRound(exitMode);
+    var exitHint = cifraExitHint(exitMode);
+    bodyEl.innerHTML = "";
+    if (!(rap > 0)) {
+      noteEl.textContent = "Нужен курс выхода Rapira больше нуля.";
+      paintChrome();
+      return;
+    }
+    if (needCifra && !(cAsk > 0)) {
+      noteEl.textContent = "Для Цифры нужен Ask Цифры больше нуля.";
+      paintChrome();
+      return;
+    }
+    if (needHice && !(hAsk > 0)) {
+      noteEl.textContent = "Для Хайс нужен курс Хайс / Криптохаб больше нуля.";
+      paintChrome();
+      return;
+    }
+    if ((needWb || needMt) && !(wbAsk > 0)) {
+      noteEl.textContent = "Для Whitebird / Multitransfer нужен курс покупки Whitebird больше нуля. Сеть — список «Сеть Whitebird».";
+      paintChrome();
+      return;
+    }
+    if (needTradex && tRates.some(function (x) { return !(x > 0); })) {
+      noteEl.textContent = "Для Tradex нужны три курса Tradex больше нуля.";
+      paintChrome();
+      return;
+    }
+    if (!needCifra && !needTradex && !needHice && !needWb && !needMt) {
+      noteEl.textContent = "Добавьте сумму и отметьте провайдера (в т.ч. Multitransfer: 2%, до 400 000 ₽ за раз).";
+      paintChrome();
+      return;
+    }
+    function cifraFee(p) { return Math.min(p * 0.007, 1500); }
+    function cifraBuy(b) {
+      var net = b / 1.015;
+      return { qty: net / cAsk, trade: b - net };
+    }
+    function tradexFee(p) { return p * 0.018; }
+    function tradexBuy(b, rate) {
+      return { qty: b / rate, trade: b - b / 1.002 };
+    }
+    var rows = [];
+    function pushRow(row) { rows.push(row); }
+    function pushEmpty(name, msg) {
+      pushRow({ name: name, empty: msg });
+    }
+    function pushCifra(name, parts, oneWithdraw) {
+      if (!parts.length) {
+        pushEmpty(name, "Нет сумм Цифры.");
+        return;
+      }
+      var fee = 0, bir = 0, bought = 0, trade = 0, short = false, sent = 0;
+      parts.forEach(function (p) {
+        var f = cifraFee(p);
+        var b = p - f;
+        var got = cifraBuy(b);
+        fee += f; bir += b; bought += got.qty; trade += got.trade; sent += p;
+        if (!oneWithdraw && got.qty < 11) short = true;
+      });
+      var wd = oneWithdraw ? exitWd : exitWd * parts.length;
+      if (oneWithdraw && bought < 11) short = true;
+      var arrive = bought - wd;
+      var cash = arrive * rap;
+      pushRow({
+        name: name, n: parts.length, fee: fee, bir: bir, trade: trade, bought: bought,
+        wd: wd, arrive: arrive, cash: cash, profit: cash - sent, short: short, kind: "cifra"
+      });
+    }
+    function pushTradex(name, parts, rateIndexes, oneWithdraw) {
+      if (!parts.length) {
+        pushEmpty(name, "Нет сумм Tradex.");
+        return;
+      }
+      var fee = 0, bir = 0, bought = 0, trade = 0, short = false, sent = 0;
+      parts.forEach(function (p, i) {
+        var rate = tRates[Math.min(rateIndexes[i], 2)];
+        var f = tradexFee(p);
+        var b = p - f;
+        var got = tradexBuy(b, rate);
+        fee += f; bir += b; bought += got.qty; trade += got.trade; sent += p;
+        if (!oneWithdraw && got.qty < 20) short = true;
+      });
+      var wd = oneWithdraw ? 5 : 5 * parts.length;
+      if (oneWithdraw && bought < 20) short = true;
+      var arrive = bought - wd;
+      var cash = arrive * rap;
+      var hint = tradexRateHint(Math.min(parts.length, 3));
+      if (parts.length > 3) hint = "курс 1 → 2 → 3 (далее курс 3)";
+      else if (parts.length === 1) hint = "курс " + (rateIndexes[0] + 1);
+      else {
+        var labels = rateIndexes.map(function (x) { return String(Math.min(x, 2) + 1); });
+        hint = "курс " + labels.join(" → ");
+      }
+      pushRow({
+        name: name + " · " + hint, n: parts.length, fee: fee, bir: bir, trade: trade, bought: bought,
+        wd: wd, arrive: arrive, cash: cash, profit: cash - sent, short: short, kind: "tradex"
+      });
+    }
+    function pushHice(name, parts) {
+      if (!parts.length) {
+        pushEmpty(name, "Нет сумм Хайс.");
+        return;
+      }
+      var fee = 0, bir = 0, bought = 0, trade = 0, sent = 0;
+      parts.forEach(function (p) {
+        var b = p;
+        var qty = b / hAsk;
+        fee += 0;
+        bir += b;
+        bought += qty;
+        sent += p;
+      });
+      var wd = 0;
+      var arrive = bought;
+      var gross = arrive * rap;
+      trade = gross * HICE_RAPIRA_SELL_FEE;
+      var cash = gross - trade;
+      pushRow({
+        name: name, n: parts.length, fee: fee, bir: bir, trade: trade, bought: bought,
+        wd: wd, arrive: arrive, cash: cash, profit: cash - sent, short: false, kind: "hice"
+      });
+    }
+    function pushWhitebird(name, parts) {
+      if (!parts.length) {
+        pushEmpty(name, "Нет сумм Whitebird.");
+        return;
+      }
+      /* Модель по заявке Whitebird: сервис 2% с суммы → на покупку идёт (сумма − 2%), qty = bir / курс; сеть − wbNet USDT; Rapira −0,10%. */
+      var fee = 0, bir = 0, bought = 0, trade = 0, sent = 0, wd = 0;
+      parts.forEach(function (p) {
+        var f = p * WB_MTS_FEE;
+        var b = p - f;
+        var qty = b / wbAsk;
+        fee += f;
+        bir += b;
+        bought += qty;
+        sent += p;
+        wd += wbNet;
+      });
+      var arrive = bought - wd;
+      var gross = arrive * rap;
+      trade = gross * HICE_RAPIRA_SELL_FEE;
+      var cash = gross - trade;
+      pushRow({
+        name: name, n: parts.length, fee: fee, bir: bir, trade: trade, bought: bought,
+        wd: wd, arrive: arrive, cash: cash, profit: cash - sent, short: arrive <= 0, kind: "whitebird"
+      });
+    }
+    function pushMultitransfer(name, parts) {
+      if (!parts.length) {
+        pushEmpty(name, "Нет сумм Multitransfer.");
+        return;
+      }
+      /* Multitransfer (таблица пользователя): 2% с суммы → bir / курс Whitebird; сеть − wbNet; Rapira −0,10%. */
+      var fee = 0, bir = 0, bought = 0, trade = 0, sent = 0, wd = 0;
+      parts.forEach(function (p) {
+        var f = p * MT_FEE;
+        var b = p - f;
+        var qty = b / wbAsk;
+        fee += f;
+        bir += b;
+        bought += qty;
+        sent += p;
+        wd += wbNet;
+      });
+      var arrive = bought - wd;
+      var gross = arrive * rap;
+      trade = gross * HICE_RAPIRA_SELL_FEE;
+      var cash = gross - trade;
+      pushRow({
+        name: name, n: parts.length, fee: fee, bir: bir, trade: trade, bought: bought,
+        wd: wd, arrive: arrive, cash: cash, profit: cash - sent, short: arrive <= 0, kind: "multitransfer"
+      });
+    }
+    var cfParts = [];
+    var txParts = [];
+    var txIdx = [];
+    var hiParts = [];
+    var wbParts = [];
+    var mtParts = [];
+    var notes = [];
+    tops.forEach(function (top) {
+      if (!(top.amount > 0) || !top.provider) return;
+      if (top.provider === "cifra") {
+        if (top.amount < 10) {
+          pushEmpty("Цифра, пополнение #" + top.no + " · " + fmt(top.amount, 2) + " ₽", "Сумма меньше минимума Цифры (10 ₽).");
+          return;
+        }
+        cfParts.push(top.amount);
+        pushCifra(
+          "Цифра, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · Ask " + fmt(cAsk, 2) + " · " + exitHint + ", свой круг",
+          [top.amount],
+          true
+        );
+      } else if (top.provider === "tradex") {
+        if (top.amount < 500 || top.amount > 100000) {
+          pushEmpty(
+            "Tradex, пополнение #" + top.no + " · " + fmt(top.amount, 2) + " ₽",
+            "Tradex СБП: сумма должна быть от 500 до 100 000 ₽."
+          );
+          return;
+        }
+        var idx = txParts.length;
+        txParts.push(top.amount);
+        txIdx.push(idx);
+        pushTradex(
+          "Tradex, пополнение #" + top.no + " · " + fmt(top.amount, 2) + " ₽, свой вывод",
+          [top.amount],
+          [idx],
+          true
+        );
+      } else if (top.provider === "hice") {
+        if (!(top.amount > 0)) {
+          pushEmpty("Хайс, пополнение #" + top.no, "Сумма должна быть больше нуля.");
+          return;
+        }
+        hiParts.push(top.amount);
+        pushHice(
+          "Хайс / Криптохаб, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · курс " + fmt(hAsk, 2) + " · Rapira продажа −0,10%",
+          [top.amount]
+        );
+      } else if (top.provider === "whitebird") {
+        if (!(top.amount > 0)) {
+          pushEmpty("Whitebird, пополнение #" + top.no, "Сумма должна быть больше нуля.");
+          return;
+        }
+        if (top.amount < WB_MIN_RUB) {
+          pushEmpty(
+            "Whitebird МТС, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · " + wbNetLabel,
+            "Минимум Whitebird для расчёта: " + fmt(WB_MIN_RUB, 0) + " ₽. Сумма " + fmt(top.amount, 2) + " ₽ слишком мала — на сайте сеть/оплата тоже не откроются. Поставьте ≥ " + fmt(WB_MIN_RUB, 0) + " ₽."
+          );
+          return;
+        }
+        wbParts.push(top.amount);
+        pushWhitebird(
+          "Whitebird МТС, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · курс " + fmt(wbAsk, 4) + " · сервис 2% · " + wbNetLabel + " −" + fmt(wbNet, 8) + " · Rapira −0,10%",
+          [top.amount]
+        );
+      } else if (top.provider === "multitransfer") {
+        if (!(top.amount > 0)) {
+          pushEmpty("Multitransfer, #" + top.no, "Сумма должна быть больше нуля.");
+          return;
+        }
+        if (top.amount > MT_LIM_ONCE) {
+          pushEmpty(
+            "Multitransfer, #" + top.no + " · " + fmt(top.amount, 2) + " ₽",
+            "Лимит Multitransfer за раз: до " + fmt(MT_LIM_ONCE, 0) + " ₽ (таблица пользователя). Сумма больше лимита."
+          );
+          return;
+        }
+        mtParts.push(top.amount);
+        pushMultitransfer(
+          "Multitransfer, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · 2% · лимит " + fmt(MT_LIM_ONCE, 0) + "/" + fmt(MT_LIM_DAY, 0) + "д/" + fmt(MT_LIM_MONTH, 0) + "м · курс " + fmt(wbAsk, 4) + " · " + wbNetLabel + " −" + fmt(wbNet, 8) + " · Rapira −0,10%",
+          [top.amount]
+        );
+      }
+    });
+    if (cfParts.length > 1) {
+      pushCifra("Цифра, все · Ask " + fmt(cAsk, 2) + " · " + exitHint + ", 1 вывод", cfParts, true);
+      pushCifra("Цифра, все · Ask " + fmt(cAsk, 2) + " · " + exitHint + ", вывод на каждой", cfParts, false);
+    }
+    if (txParts.length > 1) {
+      var idxs = txParts.map(function (_, i) { return i; });
+      pushTradex("Tradex, все выбранные, 1 вывод", txParts, idxs, true);
+      pushTradex("Tradex, все выбранные, вывод на каждой", txParts, idxs, false);
+    }
+    if (hiParts.length > 1) {
+      pushHice("Хайс / Криптохаб, все · курс " + fmt(hAsk, 2) + " · Rapira продажа −0,10%", hiParts);
+    }
+    if (wbParts.length > 1) {
+      pushWhitebird(
+        "Whitebird МТС, все · курс " + fmt(wbAsk, 4) + " · сервис 2% · " + wbNetLabel + " −" + fmt(wbNet, 8) + " ×N · Rapira −0,10%",
+        wbParts
+      );
+    }
+    if (mtParts.length > 1) {
+      var mtSum = mtParts.reduce(function (s, x) { return s + x; }, 0);
+      if (mtSum > MT_LIM_DAY) {
+        pushEmpty(
+          "Multitransfer, все выбранные",
+          "Сумма заявок " + fmt(mtSum, 0) + " ₽ превышает суточный лимит Multitransfer " + fmt(MT_LIM_DAY, 0) + " ₽ (таблица)."
+        );
+      } else if (mtSum > MT_LIM_MONTH) {
+        pushEmpty(
+          "Multitransfer, все выбранные",
+          "Сумма заявок " + fmt(mtSum, 0) + " ₽ превышает месячный лимит Multitransfer " + fmt(MT_LIM_MONTH, 0) + " ₽ (таблица)."
+        );
+      } else {
+        pushMultitransfer(
+          "Multitransfer, все · 2% · лимит " + fmt(MT_LIM_ONCE, 0) + "/" + fmt(MT_LIM_DAY, 0) + "д/" + fmt(MT_LIM_MONTH, 0) + "м · курс " + fmt(wbAsk, 4) + " · " + wbNetLabel + " · Rapira −0,10%",
+          mtParts
+        );
+      }
+    }
+    if (!cfParts.length && !txParts.length && !hiParts.length && !wbParts.length && !mtParts.length) {
+      noteEl.textContent = "Нет строк к расчёту. Multitransfer: комиссия 2%; лимиты 400 000 / 800 000 сутки / 1 000 000 мес (таблица пользователя).";
+    } else {
+      notes.push("Rapira " + fmt(rap, 2) + " ₽.");
+      if (cfParts.length) {
+        notes.push("Цифра: " + cfParts.length + " пополнения, суммы " + cfParts.map(function (x) { return fmt(x, 2); }).join(" + ") + " ₽, Ask " + fmt(cAsk, 2) + ".");
+        notes.push("Режим вывода: " + exitHint + " (итого " + fmt(exitWd, 2) + " USDT за один круг).");
+        if (exitMode.bridge) {
+          notes.push("Допуск: депозит Sol/Poly на " + exitMode.bridge + " открыт, зачисление Rapira BEP = 0. Комиссия BEP с Yieldo 19.10.2026.");
+        }
+      }
+      if (txParts.length) {
+        var used = txParts.map(function (p, i) { return fmt(p, 2) + "→курс " + (Math.min(i, 2) + 1) + " (" + fmt(tRates[Math.min(i, 2)], 6) + ")"; });
+        notes.push("Tradex: " + txParts.length + " пополнения — " + used.join("; ") + " (режим вывода Цифры на Tradex не влияет).");
+      }
+      if (hiParts.length) {
+        notes.push("Хайс (АО КБ «Хайс» / Криптохаб): " + hiParts.length + " пополнения, суммы " + hiParts.map(function (x) { return fmt(x, 2); }).join(" + ") + " ₽, курс покупки " + fmt(hAsk, 2) + " ₽, ввод 0%, вывод сети 0, продажа на Rapira −0,10%.");
+      }
+      if (wbParts.length) {
+        notes.push("Whitebird (МТС → Rapira): мин. " + fmt(WB_MIN_RUB, 0) + " ₽; " + wbParts.length + " заявки " + wbParts.map(function (x) { return fmt(x, 2); }).join(" + ") + " ₽; курс " + fmt(wbAsk, 4) + "; сервис 2%; сеть " + wbNetLabel + " (−" + fmt(wbNet, 8) + " USDT); Rapira тейкер −0,10%.");
+      }
+      if (mtParts.length) {
+        notes.push(
+          "Multitransfer (таблица пользователя): комиссия 2,0%; лимит за раз " + fmt(MT_LIM_ONCE, 0) +
+          " ₽; в сутки " + fmt(MT_LIM_DAY, 0) + " ₽; в месяц " + fmt(MT_LIM_MONTH, 0) +
+          " ₽; заявки " + mtParts.map(function (x) { return fmt(x, 2); }).join(" + ") +
+          " ₽; курс Whitebird " + fmt(wbAsk, 4) + "; сеть " + wbNetLabel + "; Rapira тейкер −0,10%."
+        );
+      }
+      noteEl.textContent = notes.join(" ");
+    }
+    var best = -Infinity, bestI = -1;
+    rows.forEach(function (row, i) {
+      if (row.empty || row.short || row.arrive <= 0) return;
+      if (row.profit > best) { best = row.profit; bestI = i; }
+    });
+    if (cardsEl) cardsEl.innerHTML = "";
+    rows.forEach(function (row, i) {
+      var tr = document.createElement("tr");
+      var card = document.createElement("article");
+      card.className = "calc-card";
+      if (row.empty) {
+        tr.className = "ghost";
+        tr.innerHTML = "<td>" + row.name + "</td><td colspan=\"9\">" + row.empty + "</td>";
+        card.className += " ghost";
+        card.innerHTML = "<div class=\"title\">" + row.name + "</div><div class=\"muted\">" + row.empty + "</div>";
+      } else if (row.short || row.arrive <= 0) {
+        tr.className = "ghost";
+        tr.innerHTML = "<td>" + row.name + "</td><td>" + row.n + "</td><td>" + fmt(row.fee, 2) + "</td><td>" + fmt(row.bir, 2) + "</td><td>" + fmt(row.trade, 2) + "</td><td>" + fmt(row.bought, 4) + "</td><td>" + fmt(row.wd, 2) + "</td><td colspan=\"3\">Вывод не проходит минимум: Цифра 11 USDT, Tradex 20 USDT.</td>";
+        card.className += " ghost";
+        card.innerHTML = "<div class=\"title\">" + row.name + "</div><div class=\"muted\">Вывод не проходит минимум (Цифра 11 / Tradex 20 USDT).</div>";
+      } else {
+        if (i === bestI || (bestI >= 0 && Math.abs(row.profit - best) < 0.005)) {
+          tr.className = "win";
+          card.className += " win";
+        } else if (row.profit < 0) {
+          tr.className = "loss";
+          card.className += " loss";
+        }
+        var profitClass = row.profit < 0 ? "neg" : "pos";
+        var tradeLabel =
+          row.kind === "cifra" ? ("1,50% = " + fmt(row.trade, 2)) :
+          (row.kind === "hice" || row.kind === "whitebird" || row.kind === "multitransfer") ? ("Rapira 0,10% = " + fmt(row.trade, 2)) :
+          ("0,2% внутри цены = " + fmt(row.trade, 2));
+        var profitText = (row.profit > 0 ? "+" : "") + fmt(row.profit, 2) + " ₽";
+        tr.innerHTML = "<td>" + row.name + "</td><td>" + row.n + "</td><td>" + fmt(row.fee, 2) + "</td><td>" + fmt(row.bir, 2) + "</td><td>" + tradeLabel + "</td><td>" + fmt(row.bought, 4) + "</td><td>" + fmt(row.wd, 2) + "</td><td>" + fmt(row.arrive, 4) + "</td><td>" + fmt(row.cash, 2) + "</td><td class=\"" + profitClass + "\">" + (row.profit > 0 ? "+" : "") + fmt(row.profit, 2) + "</td>";
+        card.innerHTML =
+          "<div class=\"title\">" + row.name + "</div>" +
+          "<div class=\"profit " + profitClass + "\">" + profitText + "</div>" +
+          "<div class=\"rows\">" +
+          "<div><span>Платежей</span><b>" + row.n + "</b></div>" +
+          "<div><span>Комиссия ввода</span><b>" + fmt(row.fee, 2) + " ₽</b></div>" +
+          "<div><span>На бирже</span><b>" + fmt(row.bir, 2) + " ₽</b></div>" +
+          "<div><span>Сделка</span><b>" + tradeLabel + "</b></div>" +
+          "<div><span>Куплено</span><b>" + fmt(row.bought, 4) + " USDT</b></div>" +
+          "<div><span>Вывод</span><b>" + fmt(row.wd, 2) + " USDT</b></div>" +
+          "<div><span>На Rapira</span><b>" + fmt(row.arrive, 4) + " USDT</b></div>" +
+          "<div><span>Выход</span><b>" + fmt(row.cash, 2) + " ₽</b></div>" +
+          "</div>";
+      }
+      bodyEl.appendChild(tr);
+      if (cardsEl) cardsEl.appendChild(card);
+    });
+    paintChrome();
+  }
+  addTopBtn.addEventListener("click", function () {
+    addTopRow(100000, "cifra");
+    paintCalc();
+  });
+  [outEl, cAskEl, hAskEl, wbAskEl, wbNetEl].concat(tAskEls).forEach(function (el) { el.addEventListener("input", paintCalc); });
+  cfExitEl.addEventListener("change", paintCalc);
+  addTopRow(100000, "cifra");
+  addTopRow(100000, "tradex");
+  addTopRow(250000, "hice");
+  addTopRow(250000, "whitebird");
+  addTopRow(217000, "multitransfer");
+  showTab("calc");
+  paintCalc();
+  btn.addEventListener("click", function () {
+    var light = root.getAttribute("data-theme") === "light";
+    if (light) root.removeAttribute("data-theme"); else root.setAttribute("data-theme", "light");
+    localStorage.setItem("arb-theme", light ? "dark" : "light");
+    paint();
+  });
+</script>
+</body>
+</html>
