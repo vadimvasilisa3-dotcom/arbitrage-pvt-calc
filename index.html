@@ -330,7 +330,7 @@
   <div class="modal">
     <h3 id="tariffsTitle">Тарифы в расчёте</h3>
     <ul>
-      <li><b>BYNEX СБП</b> — ввод 1,4% (5–100 тыс. ₽, до 2 млн ₽/мес); тейкер 0,25%; вывод 5 USDT BEP; Rapira −0,10%.</li>
+      <li><b>BYNEX СБП</b> — ввод 1,4% (5–100 тыс. ₽ за платёж, до 2 млн ₽/мес; сумма &gt;100k режется на платежи); тейкер 0,25%; вывод 5 USDT BEP; Rapira −0,10%.</li>
       <li><b>BYNEX Assist Беларусбанк</b> — ввод 0,45%; тейкер 0,25%; вывод 5 USDT BEP; Rapira −0,10%.</li>
       <li><b>BYNEX межбанк / БНБ / Альфа</b> — ввод 0%; тейкер 0,25%; вывод 5 USDT BEP; Rapira −0,10%.</li>
       <li><b>Whitebird МТС</b> — сервис 2%; сеть из списка; Rapira −0,10%.</li>
@@ -577,7 +577,7 @@
       "<div class=\"top-opts\">" +
       "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"cifra\"" + (provider === "cifra" ? " checked" : "") + "> Считаем только по Цифре</label>" +
       "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"hice\"" + (provider === "hice" ? " checked" : "") + "> Считаем только по Хайс (Криптохаб)</label>" +
-      "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"bynex_sbp\"" + (provider === "bynex_sbp" ? " checked" : "") + "> BYNEX СБП 1,4% (5–100 тыс. · до 2 млн/мес)</label>" +
+      "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"bynex_sbp\"" + (provider === "bynex_sbp" ? " checked" : "") + "> BYNEX СБП 1,4% (5–100 тыс./платёж, &gt;100k → несколько · до 2 млн/мес)</label>" +
       "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"bynex_assist\"" + (provider === "bynex_assist" ? " checked" : "") + "> BYNEX Assist Беларусбанк 0,45%</label>" +
       "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"bynex_bank\"" + (provider === "bynex_bank" ? " checked" : "") + "> BYNEX межбанк / БНБ / Альфа 0%</label>" +
       "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"whitebird\"" + (provider === "whitebird" ? " checked" : "") + "> Считаем только по Whitebird (салон МТС → Rapira)</label>" +
@@ -777,13 +777,57 @@
       if (mode === "assist") return p * BX_ASSIST_FEE;
       return BX_BANK_FEE;
     }
-    function pushBynex(name, parts, mode) {
+    /* СБП 5–100k за платёж: сумму больше 100k режем на несколько платежей, а не ругаемся. */
+    function splitBynexSbp(amount) {
+      if (!(amount > 0)) return { ok: false, msg: "Сумма должна быть больше нуля." };
+      if (amount < BX_SBP_MIN) {
+        return {
+          ok: false,
+          msg: "СБП BYNEX: минимум " + fmt(BX_SBP_MIN, 0) + " ₽ за платёж (fees)."
+        };
+      }
+      if (amount <= BX_SBP_MAX) return { ok: true, parts: [amount] };
+      var parts = [];
+      var left = amount;
+      while (left > BX_SBP_MAX) {
+        parts.push(BX_SBP_MAX);
+        left -= BX_SBP_MAX;
+      }
+      if (left > 0) {
+        if (left < BX_SBP_MIN && parts.length) {
+          var need = BX_SBP_MIN - left;
+          if (parts[parts.length - 1] - need >= BX_SBP_MIN) {
+            parts[parts.length - 1] -= need;
+            left += need;
+          } else {
+            var lastFull = parts.pop();
+            var combined = lastFull + left;
+            var a = Math.floor(combined / 2);
+            var b = combined - a;
+            if (a > BX_SBP_MAX) { a = BX_SBP_MAX; b = combined - a; }
+            if (b > BX_SBP_MAX) { b = BX_SBP_MAX; a = combined - b; }
+            if (a < BX_SBP_MIN || b < BX_SBP_MIN) {
+              return {
+                ok: false,
+                msg: "Не удалось разбить " + fmt(amount, 0) + " ₽ на платежи СБП (" + fmt(BX_SBP_MIN, 0) + "–" + fmt(BX_SBP_MAX, 0) + " ₽)."
+              };
+            }
+            parts.push(a, b);
+            left = 0;
+          }
+        }
+        if (left > 0) parts.push(left);
+      }
+      return { ok: true, parts: parts };
+    }
+    /* wdRounds: сколько выводов BEP (обычно = число пополнений, не число кусков СБП ≤100k). */
+    function pushBynex(name, parts, mode, wdRounds) {
       if (!parts.length) {
         pushEmpty(name, "Нет сумм BYNEX.");
         return;
       }
       /* BYNEX: ввод (СБП/Assist/0%) → тейкер 0,25% от bir → qty=(bir−trade)/ask → −5 USDT BEP → Rapira −0,10%. */
-      var fee = 0, bir = 0, bought = 0, trade = 0, sent = 0, wd = 0;
+      var fee = 0, bir = 0, bought = 0, trade = 0, sent = 0;
       parts.forEach(function (p) {
         var f = bynexDepFee(mode, p);
         var b = p - f;
@@ -794,8 +838,9 @@
         trade += tr;
         bought += qty;
         sent += p;
-        wd += BX_WD;
       });
+      var rounds = wdRounds > 0 ? wdRounds : parts.length;
+      var wd = BX_WD * rounds;
       var arrive = bought - wd;
       var cash = arrive * rap * (1 - HICE_RAPIRA_SELL_FEE);
       pushRow({
@@ -808,6 +853,7 @@
     var wbParts = [];
     var mtParts = [];
     var bxSbpParts = [];
+    var bxSbpTopCount = 0;
     var bxAssistParts = [];
     var bxBankParts = [];
     var notes = [];
@@ -824,7 +870,7 @@
           [top.amount],
           true
         );
-            } else if (top.provider === "hice") {
+      } else if (top.provider === "hice") {
         if (!(top.amount > 0)) {
           pushEmpty("Хайс, пополнение #" + top.no, "Сумма должна быть больше нуля.");
           return;
@@ -869,18 +915,28 @@
           [top.amount]
         );
       } else if (top.provider === "bynex_sbp") {
-        if (top.amount < BX_SBP_MIN || top.amount > BX_SBP_MAX) {
+        var sbpSplit = splitBynexSbp(top.amount);
+        if (!sbpSplit.ok) {
+          pushEmpty("BYNEX СБП, #" + top.no + " · " + fmt(top.amount, 2) + " ₽", sbpSplit.msg);
+          return;
+        }
+        if (top.amount > BX_SBP_MONTH) {
           pushEmpty(
             "BYNEX СБП, #" + top.no + " · " + fmt(top.amount, 2) + " ₽",
-            "СБП BYNEX: сумма от " + fmt(BX_SBP_MIN, 0) + " до " + fmt(BX_SBP_MAX, 0) + " ₽ (fees)."
+            "Сумма превышает месячный лимит СБП " + fmt(BX_SBP_MONTH, 0) + " ₽ (fees)."
           );
           return;
         }
-        bxSbpParts.push(top.amount);
+        sbpSplit.parts.forEach(function (p) { bxSbpParts.push(p); });
+        bxSbpTopCount += 1;
+        var sbpPayHint = sbpSplit.parts.length > 1
+          ? (sbpSplit.parts.length + " платежа (" + sbpSplit.parts.map(function (p) { return fmt(p, 0); }).join("+") + ") · ")
+          : "";
         pushBynex(
-          "BYNEX СБП, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · ввод 1,4% · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " · Rapira −0,10%",
-          [top.amount],
-          "sbp"
+          "BYNEX СБП, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · " + sbpPayHint + "ввод 1,4% · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " · Rapira −0,10%",
+          sbpSplit.parts,
+          "sbp",
+          1
         );
       } else if (top.provider === "bynex_assist") {
         if (top.amount < BX_ASSIST_MIN) {
@@ -894,7 +950,8 @@
         pushBynex(
           "BYNEX Assist 0,45%, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " · Rapira −0,10%",
           [top.amount],
-          "assist"
+          "assist",
+          1
         );
       } else if (top.provider === "bynex_bank") {
         if (!(top.amount > 0)) {
@@ -905,7 +962,8 @@
         pushBynex(
           "BYNEX межбанк 0%, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " · Rapira −0,10%",
           [top.amount],
-          "bank"
+          "bank",
+          1
         );
       }
     });
@@ -938,7 +996,7 @@
         );
       }
     }
-    if (bxSbpParts.length > 1) {
+    if (bxSbpTopCount > 1) {
       var bxSbpSum = bxSbpParts.reduce(function (s, x) { return s + x; }, 0);
       if (bxSbpSum > BX_SBP_MONTH) {
         pushEmpty(
@@ -947,24 +1005,27 @@
         );
       } else {
         pushBynex(
-          "BYNEX СБП, все · 1,4% · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " ×N · Rapira −0,10%",
+          "BYNEX СБП, все · " + bxSbpParts.length + " платежа · 1,4% · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " ×" + bxSbpTopCount + " · Rapira −0,10%",
           bxSbpParts,
-          "sbp"
+          "sbp",
+          bxSbpTopCount
         );
       }
     }
     if (bxAssistParts.length > 1) {
       pushBynex(
-        "BYNEX Assist 0,45%, все · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " ×N · Rapira −0,10%",
+        "BYNEX Assist 0,45%, все · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " ×" + bxAssistParts.length + " · Rapira −0,10%",
         bxAssistParts,
-        "assist"
+        "assist",
+        bxAssistParts.length
       );
     }
     if (bxBankParts.length > 1) {
       pushBynex(
-        "BYNEX межбанк 0%, все · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " ×N · Rapira −0,10%",
+        "BYNEX межбанк 0%, все · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " ×" + bxBankParts.length + " · Rapira −0,10%",
         bxBankParts,
-        "bank"
+        "bank",
+        bxBankParts.length
       );
     }
     if (!cfParts.length && !hiParts.length && !wbParts.length && !mtParts.length && !bxSbpParts.length && !bxAssistParts.length && !bxBankParts.length) {
@@ -1072,18 +1133,16 @@
     paintChrome();
   }
   addTopBtn.addEventListener("click", function () {
-    addTopRow(100000, "cifra");
+    addTopRow(100000, "bynex_sbp");
     paintCalc();
   });
   [outEl, cAskEl, hAskEl, bxAskEl, wbAskEl, wbNetEl].forEach(function (el) { el.addEventListener("input", paintCalc); });
   cfExitEl.addEventListener("change", paintCalc);
-  addTopRow(100000, "cifra");
-  addTopRow(250000, "hice");
-  addTopRow(100000, "bynex_sbp");
+  /* Старт: рабочие варианты без каши из 7 строк */
+  addTopRow(120000, "bynex_sbp");
   addTopRow(100000, "bynex_assist");
   addTopRow(100000, "bynex_bank");
-  addTopRow(250000, "whitebird");
-  addTopRow(217000, "multitransfer");
+  addTopRow(120000, "multitransfer");
   showTab("calc");
   paintCalc();
   if (rapiraRefreshBtn) rapiraRefreshBtn.addEventListener("click", loadRapiraRate);
