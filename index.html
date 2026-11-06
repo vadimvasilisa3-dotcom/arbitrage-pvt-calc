@@ -335,6 +335,13 @@
 </div>
 <footer id="pageFoot">Калькулятор. Курс выхода — поле Rapira (по умолчанию 84,26 ₽). Тейкер Rapira −0,10%.</footer>
 <script>
+  (function ensureCalcTrailingSlash() {
+    var path = location.pathname || "/";
+    if (/\/index\.html$/i.test(path)) return;
+    if (!/\/$/.test(path) && path.indexOf(".") === -1) {
+      location.replace(path + "/" + location.search + location.hash);
+    }
+  })();
   var root = document.documentElement, btn = document.getElementById("theme");
   if (localStorage.getItem("arb-theme") === "light") root.setAttribute("data-theme", "light");
   function paint() { btn.textContent = root.getAttribute("data-theme") === "light" ? "Тёмная тема" : "Светлая тема"; }
@@ -355,8 +362,30 @@
     rapiraStatusEl.textContent = text || "";
     rapiraStatusEl.className = "rate-status" + (kind ? (" " + kind) : "");
   }
+  function extractRapiraBid(data) {
+    if (!data) return NaN;
+    if (Number(data.bid) > 0) return Number(data.bid);
+    if (Number(data.bidPrice) > 0) return Number(data.bidPrice);
+    var list = data.data || data;
+    if (Array.isArray(list)) {
+      var row = null;
+      for (var i = 0; i < list.length; i++) {
+        if (list[i] && (list[i].symbol === "USDT/RUB" || list[i].symbol === "USDT_RUB")) {
+          row = list[i];
+          break;
+        }
+      }
+      if (!row && list[0]) row = list[0];
+      if (row) {
+        if (Number(row.bid) > 0) return Number(row.bid);
+        if (Number(row.bidPrice) > 0) return Number(row.bidPrice);
+        if (Number(row.close) > 0) return Number(row.close);
+      }
+    }
+    return NaN;
+  }
   function applyRapiraRate(data, fromLabel) {
-    var bid = Number(data && data.bid);
+    var bid = extractRapiraBid(data);
     if (!(bid > 0)) throw new Error("В ответе нет bid USDT/RUB");
     outEl.value = String(Math.round(bid * 100) / 100);
     var when = data.updatedAt ? new Date(data.updatedAt) : new Date();
@@ -365,38 +394,13 @@
       "Rapira bid " + bid.toFixed(2) + " ₽" + (timeLabel ? (" · " + timeLabel) : "") + (fromLabel ? (" · " + fromLabel) : ""),
       "ok"
     );
-    if (typeof paintCalc === "function") paintCalc();
-  }
-  function parseRapiraPayload(payload) {
-    /* Нормализуем ответ API / зеркала / jina-обёртки к {bid,ask,close,updatedAt}. */
-    if (!payload) throw new Error("пустой ответ");
-    if (payload.bid > 0) return payload;
-    var list = payload.data;
-    if (payload.data && payload.data.content && typeof payload.data.content === "string") {
-      list = JSON.parse(payload.data.content).data;
-    } else if (typeof payload.content === "string" && payload.content.charAt(0) === "{") {
-      list = JSON.parse(payload.content).data;
-    } else if (payload.data && payload.data.data) {
-      list = payload.data.data;
-    }
-    if (!Array.isArray(list)) throw new Error("нет списка пар");
-    var row = null;
-    for (var i = 0; i < list.length; i++) {
-      if (list[i] && list[i].symbol === "USDT/RUB") { row = list[i]; break; }
-    }
-    if (!row) throw new Error("нет пары USDT/RUB");
-    return {
-      symbol: "USDT/RUB",
-      bid: Number(row.bidPrice != null ? row.bidPrice : row.bid),
-      ask: Number(row.askPrice != null ? row.askPrice : row.ask),
-      close: Number(row.close),
-      updatedAt: new Date().toISOString()
-    };
+    paintCalc();
   }
   function rapiraMirrorUrls() {
+    /* Без завершающего / относительный rapira-rate.json улетал на github.io/rapira-rate.json → 404 */
     var path = location.pathname || "/";
     if (/\/index\.html$/i.test(path)) path = path.replace(/\/index\.html$/i, "/");
-    else if (!/\/$/.test(path)) path = path + "/";
+    else if (!/\/$/.test(path)) path += "/";
     var bust = "t=" + Date.now();
     return [
       location.origin + path + "rapira-rate.json?" + bust,
@@ -413,26 +417,26 @@
   function loadRapiraRate() {
     if (rapiraRefreshBtn) rapiraRefreshBtn.disabled = true;
     setRapiraStatus("Обновляю курс Rapira…", "");
-    /* 1) Живой API через jina (CORS). 2) Зеркало на Pages/GitHub. Прямой api.rapira.net из браузера режет CORS. */
-    var liveUrls = [
-      "https://r.jina.ai/http://api.rapira.net/open/market/rates",
-      "https://r.jina.ai/https://api.rapira.net/open/market/rates"
-    ];
-    var chain = Promise.reject(new Error("start"));
-    liveUrls.forEach(function (u) {
-      chain = chain.catch(function () {
-        return fetchJson(u).then(function (raw) {
-          applyRapiraRate(parseRapiraPayload(raw), "live");
-        });
+    /* 1) Прямой API Rapira (с GH Pages обычно режет CORS). 2) Зеркала JSON. */
+    var chain = fetchJson("https://api.rapira.net/open/market/rates")
+      .then(function (data) {
+        applyRapiraRate({
+          bid: extractRapiraBid(data),
+          ask: null,
+          updatedAt: new Date().toISOString(),
+          source: "https://api.rapira.net/open/market/rates"
+        }, "live api.rapira.net");
       });
-    });
-    rapiraMirrorUrls().forEach(function (u) {
-      chain = chain.catch(function () {
-        return fetchJson(u).then(function (raw) {
-          applyRapiraRate(parseRapiraPayload(raw), "зеркало");
+    var mirrors = rapiraMirrorUrls();
+    for (var i = 0; i < mirrors.length; i++) {
+      (function (url) {
+        chain = chain.catch(function () {
+          return fetchJson(url).then(function (data) {
+            applyRapiraRate(data, "зеркало");
+          });
         });
-      });
-    });
+      })(mirrors[i]);
+    }
     return chain
       .catch(function (err) {
         setRapiraStatus("Не удалось обновить: " + (err && err.message ? err.message : "ошибка") + ". Введите курс вручную.", "err");
