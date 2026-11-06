@@ -73,24 +73,26 @@
   .calc-card .rows b { font-weight:650; color:var(--text); }
   .calc-card .profit { font-size:22px; font-weight:800; margin-top:4px; }
   .phone-hint { display:none; }
-  .calc-head { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:0 0 10px; }
+  .calc-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin:0 0 10px; }
   .calc-head h2 { margin:0; flex:1 1 auto; }
-  button.info-btn { min-width:44px; min-height:44px; border-radius:999px; font-weight:700; padding:0 14px; }
-  .modal-backdrop {
-    position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:100;
-    display:flex; align-items:flex-end; justify-content:center; padding:16px;
+  .info-btn { min-height:40px; font-size:14px; }
+  .modal-back {
+    display:none; position:fixed; inset:0; z-index:100;
+    background:rgba(0,0,0,.55); padding:max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    align-items:center; justify-content:center;
   }
-  .modal-backdrop[hidden] { display:none !important; }
-  .modal-sheet {
-    width:min(560px, 100%); background:var(--card); color:var(--text);
-    border:1px solid var(--line); border-radius:16px; padding:16px;
-    max-height:min(80vh, 640px); overflow:auto;
+  .modal-back.on { display:flex; }
+  .modal {
+    width:min(520px, 100%); max-height:min(80vh, 640px); overflow:auto;
+    background:var(--card); color:var(--text); border:1px solid var(--line);
+    border-radius:14px; padding:16px; box-shadow:0 12px 40px rgba(0,0,0,.35);
   }
-  .modal-sheet h3 { margin:0 0 10px; font-size:18px; }
-  .modal-sheet ul { margin:0; padding-left:18px; }
-  .modal-sheet li { margin:0 0 8px; }
-  .modal-actions { display:flex; justify-content:flex-end; margin-top:14px; }
-  .modal-actions button { min-height:44px; }
+  .modal h3 { margin:0 0 10px; font-size:18px; }
+  .modal ul { margin:0; padding-left:18px; color:var(--muted); font-size:14px; line-height:1.45; }
+  .modal li { margin:0 0 8px; }
+  .modal li b { color:var(--text); }
+  .modal .modal-actions { display:flex; justify-content:flex-end; margin-top:14px; }
+  .modal .modal-actions button { min-height:44px; min-width:96px; }
   @media (max-width: 768px) {
     header, main, footer, nav.tabs { width:auto; margin-left:10px; margin-right:10px; }
     header { padding-top:max(12px, env(safe-area-inset-top)); gap:8px; flex-wrap:wrap; }
@@ -260,8 +262,8 @@
 <div id="panel-calc" class="panel">
 <section>
   <div class="calc-head">
-    <h2>Калькулятор: Цифра, Хайс, Whitebird, Multitransfer и BYNEX</h2>
-    <button type="button" class="info-btn" id="calcInfoBtn" aria-haspopup="dialog" title="Условия и комиссии">?</button>
+    <h2>Калькулятор</h2>
+    <button type="button" class="info-btn" id="openTariffs" aria-haspopup="dialog">Тарифы</button>
   </div>
   <div class="grid">
     <label class="field">Выход Rapira, ₽ за 1 USDT<input id="out" type="number" min="0" step="0.01" value="84.26"></label>
@@ -304,21 +306,19 @@
 </section>
 </div>
 </main>
-<div id="calcInfoModal" class="modal-backdrop" hidden>
-  <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="calcInfoTitle">
-    <h3 id="calcInfoTitle">Условия методов</h3>
+<div class="modal-back" id="tariffsModal" role="dialog" aria-modal="true" aria-labelledby="tariffsTitle" hidden>
+  <div class="modal">
+    <h3 id="tariffsTitle">Тарифы в расчёте</h3>
     <ul>
       <li><b>BYNEX СБП</b> — ввод 1,4% (5–100 тыс. ₽, до 2 млн ₽/мес); тейкер 0,25%; вывод 5 USDT BEP; Rapira −0,10%.</li>
       <li><b>BYNEX Assist Беларусбанк</b> — ввод 0,45%; тейкер 0,25%; вывод 5 USDT BEP; Rapira −0,10%.</li>
-      <li><b>BYNEX межбанк / БНБ / Альфа</b> — ввод 0% BYNEX; тейкер 0,25%; вывод 5 USDT BEP; Rapira −0,10%.</li>
-      <li><b>Whitebird МТС</b> — сервис 2%; сеть выбирается в полях; Rapira −0,10%.</li>
-      <li><b>Multitransfer</b> — 2%; лимиты 400 000 / раз, 800 000 / сутки, 1 000 000 / мес; Rapira −0,10%.</li>
-      <li><b>Цифра / Хайс</b> — как в полях калькулятора; выход Rapira −0,10%.</li>
-      <li><b>Tradex</b> — снят с расчёта.</li>
+      <li><b>BYNEX межбанк / БНБ / Альфа</b> — ввод 0%; тейкер 0,25%; вывод 5 USDT BEP; Rapira −0,10%.</li>
+      <li><b>Whitebird МТС</b> — сервис 2%; сеть из списка; Rapira −0,10%.</li>
+      <li><b>Multitransfer</b> — 2%; лимиты 400 000 / раз, 800 000 / сутки, 1 000 000 / мес.</li>
+      <li><b>Цифра / Хайс</b> — как в полях калькулятора; на всех методах продажа Rapira −0,10%.</li>
+      <li>Tradex снят с расчёта.</li>
     </ul>
-    <div class="modal-actions">
-      <button type="button" id="calcInfoClose">Закрыть</button>
-    </div>
+    <div class="modal-actions"><button type="button" id="closeTariffs">Закрыть</button></div>
   </div>
 </div>
 <footer id="pageFoot">Калькулятор. Курс выхода — поле Rapira (по умолчанию 84,26 ₽). Тейкер Rapira −0,10%.</footer>
@@ -1013,22 +1013,23 @@
     localStorage.setItem("arb-theme", light ? "dark" : "light");
     paint();
   });
-  (function () {
-    var modal = document.getElementById("calcInfoModal");
-    var openBtn = document.getElementById("calcInfoBtn");
-    var closeBtn = document.getElementById("calcInfoClose");
-    if (!modal || !openBtn || !closeBtn) return;
-    function openInfo() { modal.hidden = false; }
-    function closeInfo() { modal.hidden = true; }
-    openBtn.addEventListener("click", openInfo);
-    closeBtn.addEventListener("click", closeInfo);
-    modal.addEventListener("click", function (e) {
-      if (e.target === modal) closeInfo();
-    });
-    document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && !modal.hidden) closeInfo();
-    });
-  })();
+  var tariffsModal = document.getElementById("tariffsModal");
+  function openTariffs() {
+    tariffsModal.hidden = false;
+    tariffsModal.classList.add("on");
+  }
+  function closeTariffs() {
+    tariffsModal.classList.remove("on");
+    tariffsModal.hidden = true;
+  }
+  document.getElementById("openTariffs").addEventListener("click", openTariffs);
+  document.getElementById("closeTariffs").addEventListener("click", closeTariffs);
+  tariffsModal.addEventListener("click", function (e) {
+    if (e.target === tariffsModal) closeTariffs();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && tariffsModal.classList.contains("on")) closeTariffs();
+  });
 </script>
 </body>
 </html>
