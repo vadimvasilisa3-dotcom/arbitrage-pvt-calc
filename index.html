@@ -365,21 +365,75 @@
       "Rapira bid " + bid.toFixed(2) + " ₽" + (timeLabel ? (" · " + timeLabel) : "") + (fromLabel ? (" · " + fromLabel) : ""),
       "ok"
     );
-    paintCalc();
+    if (typeof paintCalc === "function") paintCalc();
+  }
+  function parseRapiraPayload(payload) {
+    /* Нормализуем ответ API / зеркала / jina-обёртки к {bid,ask,close,updatedAt}. */
+    if (!payload) throw new Error("пустой ответ");
+    if (payload.bid > 0) return payload;
+    var list = payload.data;
+    if (payload.data && payload.data.content && typeof payload.data.content === "string") {
+      list = JSON.parse(payload.data.content).data;
+    } else if (typeof payload.content === "string" && payload.content.charAt(0) === "{") {
+      list = JSON.parse(payload.content).data;
+    } else if (payload.data && payload.data.data) {
+      list = payload.data.data;
+    }
+    if (!Array.isArray(list)) throw new Error("нет списка пар");
+    var row = null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].symbol === "USDT/RUB") { row = list[i]; break; }
+    }
+    if (!row) throw new Error("нет пары USDT/RUB");
+    return {
+      symbol: "USDT/RUB",
+      bid: Number(row.bidPrice != null ? row.bidPrice : row.bid),
+      ask: Number(row.askPrice != null ? row.askPrice : row.ask),
+      close: Number(row.close),
+      updatedAt: new Date().toISOString()
+    };
+  }
+  function rapiraMirrorUrls() {
+    var path = location.pathname || "/";
+    if (/\/index\.html$/i.test(path)) path = path.replace(/\/index\.html$/i, "/");
+    else if (!/\/$/.test(path)) path = path + "/";
+    var bust = "t=" + Date.now();
+    return [
+      location.origin + path + "rapira-rate.json?" + bust,
+      "https://vadimvasilisa3-dotcom.github.io/arbitrage-pvt-calc/rapira-rate.json?" + bust,
+      "https://raw.githubusercontent.com/vadimvasilisa3-dotcom/arbitrage-pvt-calc/main/rapira-rate.json?" + bust
+    ];
+  }
+  function fetchJson(url) {
+    return fetch(url, { cache: "no-store", mode: "cors" }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status + " @ " + url);
+      return r.json();
+    });
   }
   function loadRapiraRate() {
     if (rapiraRefreshBtn) rapiraRefreshBtn.disabled = true;
     setRapiraStatus("Обновляю курс Rapira…", "");
-    /* С GitHub Pages прямой api.rapira.net недоступен (CORS). Берём зеркало rapira-rate.json (Actions ~каждые 20 мин). */
-    var url = "rapira-rate.json?t=" + Date.now();
-    return fetch(url, { cache: "no-store" })
-      .then(function (r) {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.json();
-      })
-      .then(function (data) {
-        applyRapiraRate(data, "авто");
-      })
+    /* 1) Живой API через jina (CORS). 2) Зеркало на Pages/GitHub. Прямой api.rapira.net из браузера режет CORS. */
+    var liveUrls = [
+      "https://r.jina.ai/http://api.rapira.net/open/market/rates",
+      "https://r.jina.ai/https://api.rapira.net/open/market/rates"
+    ];
+    var chain = Promise.reject(new Error("start"));
+    liveUrls.forEach(function (u) {
+      chain = chain.catch(function () {
+        return fetchJson(u).then(function (raw) {
+          applyRapiraRate(parseRapiraPayload(raw), "live");
+        });
+      });
+    });
+    rapiraMirrorUrls().forEach(function (u) {
+      chain = chain.catch(function () {
+        return fetchJson(u).then(function (raw) {
+          applyRapiraRate(parseRapiraPayload(raw), "зеркало");
+        });
+      });
+    });
+    return chain
       .catch(function (err) {
         setRapiraStatus("Не удалось обновить: " + (err && err.message ? err.message : "ошибка") + ". Введите курс вручную.", "err");
       })
