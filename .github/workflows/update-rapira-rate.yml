@@ -1,0 +1,52 @@
+name: Update Rapira USDT/RUB rate
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/update-rapira-rate.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch Rapira open rates
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://api.rapira.net/open/market/rates" -o /tmp/rapira-rates.json
+          python3 - <<'PY'
+          import json, datetime
+          with open("/tmp/rapira-rates.json", encoding="utf-8") as f:
+              payload = json.load(f)
+          row = next(x for x in payload["data"] if x.get("symbol") == "USDT/RUB")
+          out = {
+              "symbol": "USDT/RUB",
+              "bid": float(row["bidPrice"]),
+              "ask": float(row["askPrice"]),
+              "close": float(row.get("close") or row["bidPrice"]),
+              "updatedAt": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+              "source": "https://api.rapira.net/open/market/rates",
+          }
+          with open("rapira-rate.json", "w", encoding="utf-8") as f:
+              json.dump(out, f, ensure_ascii=False, indent=2)
+              f.write("\n")
+          print(out)
+          PY
+      - name: Commit rate file
+        run: |
+          git config user.name "rapira-rate-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add rapira-rate.json
+          if git diff --staged --quiet; then
+            echo "No rate change"
+          else
+            git commit -m "chore: refresh Rapira USDT/RUB bid"
+            git push
+          fi

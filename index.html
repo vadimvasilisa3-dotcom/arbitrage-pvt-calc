@@ -76,6 +76,12 @@
   .calc-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin:0 0 10px; }
   .calc-head h2 { margin:0; flex:1 1 auto; }
   .info-btn { min-height:40px; font-size:14px; }
+  .rate-row { display:flex; gap:8px; align-items:stretch; }
+  .rate-row input { flex:1 1 auto; min-width:0; }
+  .rate-row button { flex:0 0 auto; min-height:42px; white-space:nowrap; }
+  .rate-status { margin:4px 0 0; font-size:12px; color:var(--muted); min-height:16px; }
+  .rate-status.ok { color:var(--green); }
+  .rate-status.err { color:var(--red); }
   .modal-back {
     display:none; position:fixed; inset:0; z-index:100;
     background:rgba(0,0,0,.55); padding:max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
@@ -266,7 +272,13 @@
     <button type="button" class="info-btn" id="openTariffs" aria-haspopup="dialog">Тарифы</button>
   </div>
   <div class="grid">
-    <label class="field">Выход Rapira, ₽ за 1 USDT<input id="out" type="number" min="0" step="0.01" value="84.26"></label>
+    <label class="field">Выход Rapira, ₽ за 1 USDT (bid)
+      <span class="rate-row">
+        <input id="out" type="number" min="0" step="0.01" value="84.26">
+        <button type="button" id="rapiraRefresh" title="Подтянуть bid USDT/RUB с Rapira">Обновить</button>
+      </span>
+      <span class="rate-status" id="rapiraStatus">Курс можно подтянуть с Rapira</span>
+    </label>
     <label class="field">Ask Цифры, ₽<input id="cAsk" type="number" min="0" step="0.01" value="84.18"></label>
     <label class="field">Курс Хайс / Криптохаб, ₽<input id="hAsk" type="number" min="0" step="0.01" value="84.50"></label>
     <label class="field">Ask BYNEX (покупка), ₽<input id="bxAsk" type="number" min="0" step="0.01" value="85.91"></label>
@@ -335,7 +347,46 @@
   var wbNetEl = document.getElementById("wbNet");
   var wbNetSelectEl = document.getElementById("wbNetSelect");
   var cfExitEl = document.getElementById("cfExit");
+  var rapiraStatusEl = document.getElementById("rapiraStatus");
+  var rapiraRefreshBtn = document.getElementById("rapiraRefresh");
   var HICE_RAPIRA_SELL_FEE = 0.001;
+  function setRapiraStatus(text, kind) {
+    if (!rapiraStatusEl) return;
+    rapiraStatusEl.textContent = text || "";
+    rapiraStatusEl.className = "rate-status" + (kind ? (" " + kind) : "");
+  }
+  function applyRapiraRate(data, fromLabel) {
+    var bid = Number(data && data.bid);
+    if (!(bid > 0)) throw new Error("В ответе нет bid USDT/RUB");
+    outEl.value = String(Math.round(bid * 100) / 100);
+    var when = data.updatedAt ? new Date(data.updatedAt) : new Date();
+    var timeLabel = isNaN(when.getTime()) ? "" : when.toLocaleString("ru-RU", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+    setRapiraStatus(
+      "Rapira bid " + bid.toFixed(2) + " ₽" + (timeLabel ? (" · " + timeLabel) : "") + (fromLabel ? (" · " + fromLabel) : ""),
+      "ok"
+    );
+    paintCalc();
+  }
+  function loadRapiraRate() {
+    if (rapiraRefreshBtn) rapiraRefreshBtn.disabled = true;
+    setRapiraStatus("Обновляю курс Rapira…", "");
+    /* С GitHub Pages прямой api.rapira.net недоступен (CORS). Берём зеркало rapira-rate.json (Actions ~каждые 20 мин). */
+    var url = "rapira-rate.json?t=" + Date.now();
+    return fetch(url, { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        applyRapiraRate(data, "авто");
+      })
+      .catch(function (err) {
+        setRapiraStatus("Не удалось обновить: " + (err && err.message ? err.message : "ошибка") + ". Введите курс вручную.", "err");
+      })
+      .then(function () {
+        if (rapiraRefreshBtn) rapiraRefreshBtn.disabled = false;
+      });
+  }
   var WB_MTS_FEE = 0.02; /* салон МТС: 2% сервиса с суммы заявки (скрины/тариф whitebird.io) */
   var WB_MIN_RUB = 10000; /* мин. сумма Whitebird по сообщению пользователя / UI */
   /* Multitransfer — сводная таблица пользователя: 2%; 400 000 / раз; 800 000 / сутки; 1 000 000 / мес */
@@ -1007,6 +1058,8 @@
   addTopRow(217000, "multitransfer");
   showTab("calc");
   paintCalc();
+  if (rapiraRefreshBtn) rapiraRefreshBtn.addEventListener("click", loadRapiraRate);
+  loadRapiraRate();
   btn.addEventListener("click", function () {
     var light = root.getAttribute("data-theme") === "light";
     if (light) root.removeAttribute("data-theme"); else root.setAttribute("data-theme", "light");
