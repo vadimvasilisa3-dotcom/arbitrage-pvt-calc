@@ -418,33 +418,45 @@
   }
   function fetchJson(url) {
     return fetch(url, { cache: "no-store", mode: "cors" }).then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status + " @ " + url);
+      if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
     });
   }
+  function applyLiveRapiraPayload(data, label) {
+    var bid = extractRapiraBid(data);
+    if (!(bid > 0)) throw new Error("нет bid");
+    applyRapiraRate({
+      bid: bid,
+      ask: null,
+      updatedAt: new Date().toISOString(),
+      source: "https://api.rapira.net/open/market/rates"
+    }, label);
+  }
   function loadRapiraRate() {
     if (rapiraRefreshBtn) rapiraRefreshBtn.disabled = true;
-    setRapiraStatus("Обновляю курс Rapira…", "");
-    /* 1) Прямой API Rapira (с GH Pages обычно режет CORS). 2) Зеркала JSON. */
-    var chain = fetchJson("https://api.rapira.net/open/market/rates")
-      .then(function (data) {
-        applyRapiraRate({
-          bid: extractRapiraBid(data),
-          ask: null,
-          updatedAt: new Date().toISOString(),
-          source: "https://api.rapira.net/open/market/rates"
-        }, "live api.rapira.net");
-      });
-    var mirrors = rapiraMirrorUrls();
-    for (var i = 0; i < mirrors.length; i++) {
-      (function (url) {
-        chain = chain.catch(function () {
-          return fetchJson(url).then(function (data) {
-            applyRapiraRate(data, "зеркало");
-          });
+    setRapiraStatus("Обновляю курс Rapira (live)…", "");
+    var rapiraApi = "https://api.rapira.net/open/market/rates";
+    /* Прямой api.rapira.net с GitHub Pages режет CORS. Сначала live через CORS-прокси, потом зеркала. */
+    var liveUrls = [
+      "https://api.cors.lol/?url=" + encodeURIComponent(rapiraApi),
+      rapiraApi
+    ];
+    var chain = Promise.reject(new Error("start"));
+    liveUrls.forEach(function (url) {
+      chain = chain.catch(function () {
+        return fetchJson(url).then(function (data) {
+          applyLiveRapiraPayload(data, url.indexOf("cors.lol") >= 0 ? "live" : "live api");
         });
-      })(mirrors[i]);
-    }
+      });
+    });
+    rapiraMirrorUrls().forEach(function (url) {
+      chain = chain.catch(function () {
+        return fetchJson(url).then(function (data) {
+          var ageMin = data.updatedAt ? ((Date.now() - new Date(data.updatedAt).getTime()) / 60000) : 999;
+          applyRapiraRate(data, ageMin > 5 ? ("зеркало, устарело ~" + Math.round(ageMin) + " мин") : "зеркало");
+        });
+      });
+    });
     return chain
       .catch(function (err) {
         setRapiraStatus("Не удалось обновить: " + (err && err.message ? err.message : "ошибка") + ". Введите курс вручную.", "err");
