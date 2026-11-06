@@ -98,7 +98,7 @@
 <header>
   <div>
     <h1>Ввод рублей → покупка USDT → Rapira</h1>
-    <p class="muted" id="lead">17.10.2026. Три шага: ввод, покупка, вывод. 1 USDT на выходе = 87,29 ₽. Комиссия 0,08 ₽ второй раз не вычитается.</p>
+    <p class="muted" id="lead">Ввод → покупка USDT → Rapira. Курс выхода задаётся в калькуляторе (по умолчанию 84,26 ₽). Продажа на Rapira −0,10% на всех методах.</p>
   </div>
   <button type="button" id="theme">Светлая тема</button>
 </header>
@@ -116,14 +116,14 @@
       <tbody>
         <tr><td>1</td><td>Tradex</td><td>Прочерк. В расчёте 0 ₽ площадки</td><td>1,8%. Операция до 100 000 ₽</td><td>SberPay 2,5%. До 100 000 ₽</td><td>Тейкер 0,2%</td><td>84,36 ₽ / 84,42 ₽</td><td>5 USDT</td></tr>
         <tr><td>2</td><td>Cifra</td><td>0% или банки РФ 0,15%</td><td>0,7%, не больше 1 500 ₽</td><td>Безнал 0%. Наличные 1%</td><td>1,50% после сделки</td><td>Ask 84,18 ₽</td><td>10 USDT</td></tr>
-        <tr><td>3</td><td>BYNEX</td><td>0% BYNEX. Мгновенный: сутки 75 000 ₽</td><td>СБП РФ нет</td><td>0,45% / 2,00% / 2,5%</td><td>Тейкер 0,25%</td><td>Ask 85,91 ₽</td><td>5 USDT BEP-20</td></tr>
+        <tr><td>3</td><td>BYNEX</td><td>0% BYNEX (перевод / БНБ / Альфа). Технобанк: 75 000 ₽/сутки, 750 000 ₽/мес</td><td>1,4%. 5–100 000 ₽; до 2 000 000 ₽/мес</td><td>Assist Беларусбанк 0,45%; Assist общий 2,00%; bePaid 2,5%</td><td>Тейкер 0,25%</td><td>Ask в калькуляторе</td><td>5 USDT BEP-20 (отчёт); TRC-20 10</td></tr>
         <tr><td>4</td><td>Free2ex</td><td>0%</td><td>1,8%</td><td>SberPay 1,8%. Карты 3%</td><td>Тейкер 1,75%</td><td>Стакан не загружен</td><td>2 USDT</td></tr>
         <tr><td>5</td><td>Comes</td><td>0% площадки</td><td>Нет</td><td>Нет</td><td>Тейкер 0,25%</td><td>60 USDT</td><td>10 USDT</td></tr>
         <tr class="ghost"><td>6</td><td>Broker</td><td>По счёту. Банк не известен</td><td>Нет</td><td>Нет</td><td>0,83 ₽ на 1 USDT</td><td>84,58 ₽ с комиссией</td><td>Тариф не загружен</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="muted">Выгрузка BYNEX от 16.10 расходится с заданием 17.10 по картам. В API Цифры есть тариф 1,90%. В ячейках взят 1,50%.</p>
+  <p class="muted">BYNEX СБП/лимиты — со страницы комиссий bynex.io/fees. Тейкер 0,25% и вывод 5 USDT BEP — из отчёта 17.10 (вкладка «Торговля/крипта» в калькуляторе задаётся полем Ask). В API Цифры есть тариф 1,90%; в ячейках взят 1,50%.</p>
 </section>
 
 <section>
@@ -241,12 +241,13 @@
 </div>
 <div id="panel-calc" class="panel">
 <section>
-  <h2>Калькулятор: Цифра, Tradex, Хайс, Whitebird и Multitransfer</h2>
-  <p class="muted" id="calcLead">Пополнения вручную: сумма и провайдер. Цифра / Tradex / Хайс — как раньше. Whitebird (салон МТС): минимум <b>10 000 ₽</b>, сервис 2%, сеть выбирается ниже (BEP-20 по умолчанию), продажа на Rapira −0,10% (тейкер, бронза). <b>Multitransfer</b> (сводная таблица пользователя): комиссия <b>2,0%</b>; лимит за раз <b>400 000 ₽</b>; в сутки <b>800 000 ₽</b>; в месяц <b>1 000 000 ₽</b>.</p>
+  <h2>Калькулятор: Цифра, Tradex, Хайс, Whitebird, Multitransfer и BYNEX</h2>
+  <p class="muted" id="calcLead">Пополнения вручную. <b>BYNEX</b> (fees): СБП <b>1,4%</b> (5–100 тыс., до 2 млн/мес); Assist Беларусбанк <b>0,45%</b>; межбанк/БНБ/Альфа <b>0%</b>; тейкер <b>0,25%</b>; вывод <b>5 USDT BEP-20</b>; Rapira −0,10%. Whitebird МТС 2% / Multitransfer 2% · лимиты 400k / 800k сутки / 1M мес.</p>
   <div class="grid">
     <label class="field">Выход Rapira, ₽ за 1 USDT<input id="out" type="number" min="0" step="0.01" value="84.26"></label>
     <label class="field">Ask Цифры, ₽<input id="cAsk" type="number" min="0" step="0.01" value="84.18"></label>
     <label class="field">Курс Хайс / Криптохаб, ₽<input id="hAsk" type="number" min="0" step="0.01" value="84.50"></label>
+    <label class="field">Ask BYNEX (покупка), ₽<input id="bxAsk" type="number" min="0" step="0.01" value="85.91"></label>
     <label class="field">Курс Whitebird (покупка), ₽<input id="wbAsk" type="number" min="0" step="0.0001" value="81.1738"></label>
     <label class="field">Сеть Whitebird (для USDT)
       <select id="wbNetSelect">
@@ -286,7 +287,7 @@
 </section>
 </div>
 </main>
-<footer id="pageFoot">Числа из arbitrage/dashboard.md. Курс 87,29 ₽ задан заданием 17.10.</footer>
+<footer id="pageFoot">Калькулятор. Курс выхода — поле Rapira (по умолчанию 84,26 ₽). Тейкер Rapira −0,10%.</footer>
 <script>
   var root = document.documentElement, btn = document.getElementById("theme");
   if (localStorage.getItem("arb-theme") === "light") root.setAttribute("data-theme", "light");
@@ -295,6 +296,7 @@
   var outEl = document.getElementById("out");
   var cAskEl = document.getElementById("cAsk");
   var hAskEl = document.getElementById("hAsk");
+  var bxAskEl = document.getElementById("bxAsk");
   var wbAskEl = document.getElementById("wbAsk");
   var wbNetEl = document.getElementById("wbNet");
   var wbNetSelectEl = document.getElementById("wbNetSelect");
@@ -312,6 +314,16 @@
   var MT_LIM_ONCE = 400000;
   var MT_LIM_DAY = 800000;
   var MT_LIM_MONTH = 1000000;
+  /* BYNEX — fees (ввод) + отчёт 17.10 (тейкер 0,25%, вывод BEP 5) */
+  var BX_TAKER = 0.0025;
+  var BX_WD = 5;
+  var BX_SBP_FEE = 0.014;
+  var BX_SBP_MIN = 5000;
+  var BX_SBP_MAX = 100000;
+  var BX_SBP_MONTH = 2000000;
+  var BX_ASSIST_FEE = 0.0045;
+  var BX_ASSIST_MIN = 750;
+  var BX_BANK_FEE = 0;
   var WB_NET_PRESETS = {
     bep20: { label: "BEP-20", fee: 0.00889704 },
     erc20: { label: "ERC-20", fee: 0.00889704 },
@@ -408,6 +420,9 @@
       "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"cifra\"" + (provider === "cifra" ? " checked" : "") + "> Считаем только по Цифре</label>" +
       "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"tradex\"" + (provider === "tradex" ? " checked" : "") + "> Считаем только по Tradex</label>" +
       "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"hice\"" + (provider === "hice" ? " checked" : "") + "> Считаем только по Хайс (Криптохаб)</label>" +
+      "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"bynex_sbp\"" + (provider === "bynex_sbp" ? " checked" : "") + "> BYNEX СБП 1,4% (5–100 тыс. · до 2 млн/мес)</label>" +
+      "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"bynex_assist\"" + (provider === "bynex_assist" ? " checked" : "") + "> BYNEX Assist Беларусбанк 0,45%</label>" +
+      "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"bynex_bank\"" + (provider === "bynex_bank" ? " checked" : "") + "> BYNEX межбанк / БНБ / Альфа 0%</label>" +
       "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"whitebird\"" + (provider === "whitebird" ? " checked" : "") + "> Считаем только по Whitebird (салон МТС → Rapira)</label>" +
       "<label><input type=\"radio\" name=\"prov-" + id + "\" value=\"multitransfer\"" + (provider === "multitransfer" ? " checked" : "") + "> Multitransfer (2% · до 400 000 / 800 000 сутки / 1 000 000 мес)</label>" +
       "</div>" +
@@ -442,17 +457,22 @@
   }
   function paintCalc() {
     var rap = readNum(outEl), cAsk = readNum(cAskEl), hAsk = readNum(hAskEl);
+    var bxAsk = readNum(bxAskEl);
     var wbAsk = readNum(wbAskEl), wbNet = readNum(wbNetEl);
     if (!(wbNet >= 0)) wbNet = 0;
     var wbNetPreset = WB_NET_PRESETS[wbNetSelectEl.value] || WB_NET_PRESETS.custom;
     var wbNetLabel = wbNetPreset.label || "сеть";
     var tRates = tAskEls.map(readNum);
+    function isBynex(p) {
+      return p === "bynex_sbp" || p === "bynex_assist" || p === "bynex_bank";
+    }
     var tops = readTops();
     var needCifra = tops.some(function (t) { return t.provider === "cifra" && t.amount > 0; });
     var needTradex = tops.some(function (t) { return t.provider === "tradex" && t.amount > 0; });
     var needHice = tops.some(function (t) { return t.provider === "hice" && t.amount > 0; });
     var needWb = tops.some(function (t) { return t.provider === "whitebird" && t.amount > 0; });
     var needMt = tops.some(function (t) { return t.provider === "multitransfer" && t.amount > 0; });
+    var needBx = tops.some(function (t) { return isBynex(t.provider) && t.amount > 0; });
     var exitMode = cifraExitMode();
     var exitWd = cifraWdPerRound(exitMode);
     var exitHint = cifraExitHint(exitMode);
@@ -472,6 +492,11 @@
       paintChrome();
       return;
     }
+    if (needBx && !(bxAsk > 0)) {
+      noteEl.textContent = "Для BYNEX нужен Ask BYNEX больше нуля.";
+      paintChrome();
+      return;
+    }
     if ((needWb || needMt) && !(wbAsk > 0)) {
       noteEl.textContent = "Для Whitebird / Multitransfer нужен курс покупки Whitebird больше нуля. Сеть — список «Сеть Whitebird».";
       paintChrome();
@@ -482,8 +507,8 @@
       paintChrome();
       return;
     }
-    if (!needCifra && !needTradex && !needHice && !needWb && !needMt) {
-      noteEl.textContent = "Добавьте сумму и отметьте провайдера (в т.ч. Multitransfer: 2%, до 400 000 ₽ за раз).";
+    if (!needCifra && !needTradex && !needHice && !needWb && !needMt && !needBx) {
+      noteEl.textContent = "Добавьте сумму и отметьте провайдера (BYNEX СБП / Assist / межбанк, Multitransfer и др.).";
       paintChrome();
       return;
     }
@@ -631,12 +656,46 @@
         wd: wd, arrive: arrive, cash: cash, profit: cash - sent, short: arrive <= 0, kind: "multitransfer"
       });
     }
+    function bynexDepFee(mode, p) {
+      if (mode === "sbp") return p * BX_SBP_FEE;
+      if (mode === "assist") return p * BX_ASSIST_FEE;
+      return BX_BANK_FEE;
+    }
+    function pushBynex(name, parts, mode) {
+      if (!parts.length) {
+        pushEmpty(name, "Нет сумм BYNEX.");
+        return;
+      }
+      /* BYNEX: ввод (СБП/Assist/0%) → тейкер 0,25% от bir → qty=(bir−trade)/ask → −5 USDT BEP → Rapira −0,10%. */
+      var fee = 0, bir = 0, bought = 0, trade = 0, sent = 0, wd = 0;
+      parts.forEach(function (p) {
+        var f = bynexDepFee(mode, p);
+        var b = p - f;
+        var tr = b * BX_TAKER;
+        var qty = (b - tr) / bxAsk;
+        fee += f;
+        bir += b;
+        trade += tr;
+        bought += qty;
+        sent += p;
+        wd += BX_WD;
+      });
+      var arrive = bought - wd;
+      var cash = arrive * rap * (1 - HICE_RAPIRA_SELL_FEE);
+      pushRow({
+        name: name, n: parts.length, fee: fee, bir: bir, trade: trade, bought: bought,
+        wd: wd, arrive: arrive, cash: cash, profit: cash - sent, short: arrive <= 0, kind: "bynex"
+      });
+    }
     var cfParts = [];
     var txParts = [];
     var txIdx = [];
     var hiParts = [];
     var wbParts = [];
     var mtParts = [];
+    var bxSbpParts = [];
+    var bxAssistParts = [];
+    var bxBankParts = [];
     var notes = [];
     tops.forEach(function (top) {
       if (!(top.amount > 0) || !top.provider) return;
@@ -712,6 +771,45 @@
           "Multitransfer, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · 2% · лимит " + fmt(MT_LIM_ONCE, 0) + "/" + fmt(MT_LIM_DAY, 0) + "д/" + fmt(MT_LIM_MONTH, 0) + "м · курс " + fmt(wbAsk, 4) + " · " + wbNetLabel + " −" + fmt(wbNet, 8) + " · Rapira −0,10%",
           [top.amount]
         );
+      } else if (top.provider === "bynex_sbp") {
+        if (top.amount < BX_SBP_MIN || top.amount > BX_SBP_MAX) {
+          pushEmpty(
+            "BYNEX СБП, #" + top.no + " · " + fmt(top.amount, 2) + " ₽",
+            "СБП BYNEX: сумма от " + fmt(BX_SBP_MIN, 0) + " до " + fmt(BX_SBP_MAX, 0) + " ₽ (fees)."
+          );
+          return;
+        }
+        bxSbpParts.push(top.amount);
+        pushBynex(
+          "BYNEX СБП, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · ввод 1,4% · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " · Rapira −0,10%",
+          [top.amount],
+          "sbp"
+        );
+      } else if (top.provider === "bynex_assist") {
+        if (top.amount < BX_ASSIST_MIN) {
+          pushEmpty(
+            "BYNEX Assist, #" + top.no + " · " + fmt(top.amount, 2) + " ₽",
+            "Assist Беларусбанк: минимум " + fmt(BX_ASSIST_MIN, 0) + " ₽ (fees)."
+          );
+          return;
+        }
+        bxAssistParts.push(top.amount);
+        pushBynex(
+          "BYNEX Assist 0,45%, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " · Rapira −0,10%",
+          [top.amount],
+          "assist"
+        );
+      } else if (top.provider === "bynex_bank") {
+        if (!(top.amount > 0)) {
+          pushEmpty("BYNEX межбанк, #" + top.no, "Сумма должна быть больше нуля.");
+          return;
+        }
+        bxBankParts.push(top.amount);
+        pushBynex(
+          "BYNEX межбанк 0%, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " · Rapira −0,10%",
+          [top.amount],
+          "bank"
+        );
       }
     });
     if (cfParts.length > 1) {
@@ -734,15 +832,12 @@
     }
     if (mtParts.length > 1) {
       var mtSum = mtParts.reduce(function (s, x) { return s + x; }, 0);
+      /* Суточный лимит 800k строже месячного 1M — отдельная ветка «месяц» после суток была мёртвой. */
       if (mtSum > MT_LIM_DAY) {
         pushEmpty(
           "Multitransfer, все выбранные",
-          "Сумма заявок " + fmt(mtSum, 0) + " ₽ превышает суточный лимит Multitransfer " + fmt(MT_LIM_DAY, 0) + " ₽ (таблица)."
-        );
-      } else if (mtSum > MT_LIM_MONTH) {
-        pushEmpty(
-          "Multitransfer, все выбранные",
-          "Сумма заявок " + fmt(mtSum, 0) + " ₽ превышает месячный лимит Multitransfer " + fmt(MT_LIM_MONTH, 0) + " ₽ (таблица)."
+          "Сумма заявок " + fmt(mtSum, 0) + " ₽ превышает суточный лимит " + fmt(MT_LIM_DAY, 0) +
+          " ₽ (месячный в таблице: " + fmt(MT_LIM_MONTH, 0) + " ₽)."
         );
       } else {
         pushMultitransfer(
@@ -751,10 +846,39 @@
         );
       }
     }
-    if (!cfParts.length && !txParts.length && !hiParts.length && !wbParts.length && !mtParts.length) {
-      noteEl.textContent = "Нет строк к расчёту. Multitransfer: комиссия 2%; лимиты 400 000 / 800 000 сутки / 1 000 000 мес (таблица пользователя).";
+    if (bxSbpParts.length > 1) {
+      var bxSbpSum = bxSbpParts.reduce(function (s, x) { return s + x; }, 0);
+      if (bxSbpSum > BX_SBP_MONTH) {
+        pushEmpty(
+          "BYNEX СБП, все выбранные",
+          "Сумма " + fmt(bxSbpSum, 0) + " ₽ превышает месячный лимит СБП " + fmt(BX_SBP_MONTH, 0) + " ₽ (fees)."
+        );
+      } else {
+        pushBynex(
+          "BYNEX СБП, все · 1,4% · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " ×N · Rapira −0,10%",
+          bxSbpParts,
+          "sbp"
+        );
+      }
+    }
+    if (bxAssistParts.length > 1) {
+      pushBynex(
+        "BYNEX Assist 0,45%, все · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " ×N · Rapira −0,10%",
+        bxAssistParts,
+        "assist"
+      );
+    }
+    if (bxBankParts.length > 1) {
+      pushBynex(
+        "BYNEX межбанк 0%, все · Ask " + fmt(bxAsk, 2) + " · тейкер 0,25% · BEP −" + fmt(BX_WD, 0) + " ×N · Rapira −0,10%",
+        bxBankParts,
+        "bank"
+      );
+    }
+    if (!cfParts.length && !txParts.length && !hiParts.length && !wbParts.length && !mtParts.length && !bxSbpParts.length && !bxAssistParts.length && !bxBankParts.length) {
+      noteEl.textContent = "Нет строк к расчёту. BYNEX: СБП 1,4% / Assist 0,45% / межбанк 0%; Multitransfer: 2%, лимиты 400k / 800k сутки / 1M мес.";
     } else {
-      notes.push("Rapira " + fmt(rap, 2) + " ₽.");
+      notes.push("Rapira " + fmt(rap, 2) + " ₽, тейкер −0,10%.");
       if (cfParts.length) {
         notes.push("Цифра: " + cfParts.length + " пополнения, суммы " + cfParts.map(function (x) { return fmt(x, 2); }).join(" + ") + " ₽, Ask " + fmt(cAsk, 2) + ".");
         notes.push("Режим вывода: " + exitHint + " (итого " + fmt(exitWd, 2) + " USDT за один круг).");
@@ -768,6 +892,14 @@
       }
       if (hiParts.length) {
         notes.push("Хайс (АО КБ «Хайс» / Криптохаб): " + hiParts.length + " пополнения, суммы " + hiParts.map(function (x) { return fmt(x, 2); }).join(" + ") + " ₽, курс покупки " + fmt(hAsk, 2) + " ₽, ввод 0%, вывод сети 0, продажа на Rapira −0,10%.");
+      }
+      if (bxSbpParts.length || bxAssistParts.length || bxBankParts.length) {
+        notes.push(
+          "BYNEX: Ask " + fmt(bxAsk, 2) + "; тейкер 0,25%; вывод BEP " + fmt(BX_WD, 0) + " USDT/заявка; Rapira −0,10%." +
+          (bxSbpParts.length ? (" СБП 1,4%: " + bxSbpParts.map(function (x) { return fmt(x, 2); }).join(" + ") + " ₽.") : "") +
+          (bxAssistParts.length ? (" Assist 0,45%: " + bxAssistParts.map(function (x) { return fmt(x, 2); }).join(" + ") + " ₽.") : "") +
+          (bxBankParts.length ? (" Межбанк 0%: " + bxBankParts.map(function (x) { return fmt(x, 2); }).join(" + ") + " ₽.") : "")
+        );
       }
       if (wbParts.length) {
         notes.push("Whitebird (МТС → Rapira): мин. " + fmt(WB_MIN_RUB, 0) + " ₽; " + wbParts.length + " заявки " + wbParts.map(function (x) { return fmt(x, 2); }).join(" + ") + " ₽; курс " + fmt(wbAsk, 4) + "; сервис 2%; сеть " + wbNetLabel + " (−" + fmt(wbNet, 8) + " USDT); Rapira тейкер −0,10%.");
@@ -813,6 +945,7 @@
         var profitClass = row.profit < 0 ? "neg" : "pos";
         var tradeLabel =
           row.kind === "cifra" ? ("1,50% = " + fmt(row.trade, 2)) :
+          row.kind === "bynex" ? ("тейкер 0,25% = " + fmt(row.trade, 2)) :
           (row.kind === "hice" || row.kind === "whitebird" || row.kind === "multitransfer") ? ("Rapira 0,10% = " + fmt(row.trade, 2)) :
           ("0,2% внутри цены = " + fmt(row.trade, 2));
         var profitText = (row.profit > 0 ? "+" : "") + fmt(row.profit, 2) + " ₽";
@@ -840,11 +973,14 @@
     addTopRow(100000, "cifra");
     paintCalc();
   });
-  [outEl, cAskEl, hAskEl, wbAskEl, wbNetEl].concat(tAskEls).forEach(function (el) { el.addEventListener("input", paintCalc); });
+  [outEl, cAskEl, hAskEl, bxAskEl, wbAskEl, wbNetEl].concat(tAskEls).forEach(function (el) { el.addEventListener("input", paintCalc); });
   cfExitEl.addEventListener("change", paintCalc);
   addTopRow(100000, "cifra");
   addTopRow(100000, "tradex");
   addTopRow(250000, "hice");
+  addTopRow(100000, "bynex_sbp");
+  addTopRow(100000, "bynex_assist");
+  addTopRow(100000, "bynex_bank");
   addTopRow(250000, "whitebird");
   addTopRow(217000, "multitransfer");
   showTab("calc");
