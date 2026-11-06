@@ -322,6 +322,7 @@
       <tbody id="calcBody"></tbody>
     </table>
   </div>
+  <div id="calcSummary" class="calc-summary" hidden></div>
 </section>
 </div>
 </main>
@@ -510,7 +511,13 @@
   }
   var bodyEl = document.getElementById("calcBody");
   var cardsEl = document.getElementById("calcCards");
+  var summaryEl = document.getElementById("calcSummary");
   var noteEl = document.getElementById("calcNote");
+  function hideSummary() {
+    if (!summaryEl) return;
+    summaryEl.hidden = true;
+    summaryEl.innerHTML = "";
+  }
   var tabReport = document.getElementById("tabReport");
   var tabCalc = document.getElementById("tabCalc");
   var leadEl = document.getElementById("lead");
@@ -613,6 +620,7 @@
     var exitWd = cifraWdPerRound(exitMode);
     var exitHint = cifraExitHint(exitMode);
     bodyEl.innerHTML = "";
+    hideSummary();
     if (!(rap > 0)) {
       noteEl.textContent = "Нужен курс выхода Rapira больше нуля.";
       paintChrome();
@@ -1035,6 +1043,20 @@
       bodyEl.appendChild(tr);
       if (cardsEl) cardsEl.appendChild(card);
     });
+    if (summaryEl) {
+      if (bestI >= 0 && rows[bestI] && !rows[bestI].empty) {
+        var bestRow = rows[bestI];
+        var pClass = bestRow.profit < 0 ? "neg" : "pos";
+        var pText = (bestRow.profit > 0 ? "+" : "") + fmt(bestRow.profit, 2) + " ₽";
+        summaryEl.hidden = false;
+        summaryEl.innerHTML =
+          "<p class=\"big " + pClass + "\">Итог: " + pText + "</p>" +
+          "<p class=\"sub\">Лучший вариант: " + bestRow.name + "</p>" +
+          "<p class=\"sub\">Выход " + fmt(bestRow.cash, 2) + " ₽ · на Rapira " + fmt(bestRow.arrive, 4) + " USDT · Rapira " + fmt(rap, 2) + " ₽</p>";
+      } else {
+        hideSummary();
+      }
+    }
     paintChrome();
   }
   addTopBtn.addEventListener("click", function () {
