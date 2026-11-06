@@ -370,8 +370,8 @@
     }
     var rap = readNum(outEl);
     var rate = rap > 0 ? fmt(rap, 2) + " ₽" : "курс не задан";
-    leadEl.textContent = "Калькулятор. 1 USDT на выходе = " + rate + ". Комиссия 0,08 ₽ второй раз не вычитается.";
-    footEl.textContent = "Калькулятор. Курс выхода Rapira: " + rate + ".";
+    leadEl.textContent = "Калькулятор. 1 USDT на выходе = " + rate + ". Продажа на Rapira −0,10% (тейкер) на всех методах.";
+    footEl.textContent = "Калькулятор. Курс выхода Rapira: " + rate + ". Тейкер −0,10%.";
   }
   function showTab(name) {
     document.getElementById("panel-report").hidden = name !== "report";
@@ -517,7 +517,8 @@
       var wd = oneWithdraw ? exitWd : exitWd * parts.length;
       if (oneWithdraw && bought < 11) short = true;
       var arrive = bought - wd;
-      var cash = arrive * rap;
+      /* Выход Rapira: тейкер −0,10% (как у Хайс / Whitebird / Multitransfer). Колонка trade = комиссия покупки Цифры 1,50%. */
+      var cash = arrive * rap * (1 - HICE_RAPIRA_SELL_FEE);
       pushRow({
         name: name, n: parts.length, fee: fee, bir: bir, trade: trade, bought: bought,
         wd: wd, arrive: arrive, cash: cash, profit: cash - sent, short: short, kind: "cifra"
@@ -540,7 +541,8 @@
       var wd = oneWithdraw ? 5 : 5 * parts.length;
       if (oneWithdraw && bought < 20) short = true;
       var arrive = bought - wd;
-      var cash = arrive * rap;
+      /* Выход Rapira: тейкер −0,10% (выровнено со всеми методами). Колонка trade = 0,2% внутри цены (показ). */
+      var cash = arrive * rap * (1 - HICE_RAPIRA_SELL_FEE);
       var hint = tradexRateHint(Math.min(parts.length, 3));
       if (parts.length > 3) hint = "курс 1 → 2 → 3 (далее курс 3)";
       else if (parts.length === 1) hint = "курс " + (rateIndexes[0] + 1);
