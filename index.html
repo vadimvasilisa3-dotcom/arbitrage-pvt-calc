@@ -497,18 +497,20 @@
   }
   function fetchRapiraLiveBid() {
     var rapiraApi = "https://api.rapira.net/open/market/rates";
-    /* GH Pages режет CORS — live через обходы. jina стабильнее cors.lol/allorigins. */
+    var enc = encodeURIComponent(rapiraApi);
+    /* GH Pages режет CORS — live через обходы. http:// через jina сейчас стабильнее https://. */
     return firstOk([
-      function () { return fetchText("https://r.jina.ai/https://api.rapira.net/open/market/rates", 10000).then(extractJsonPayload); },
       function () { return fetchText("https://r.jina.ai/http://api.rapira.net/open/market/rates", 10000).then(extractJsonPayload); },
-      function () { return fetchJson("https://api.cors.lol/?url=" + encodeURIComponent(rapiraApi), 8000); },
-      function () { return fetchJson("https://api.allorigins.win/raw?url=" + encodeURIComponent(rapiraApi), 8000); },
+      function () { return fetchText("https://r.jina.ai/https://api.rapira.net/open/market/rates", 10000).then(extractJsonPayload); },
+      function () { return fetchJson("https://api.allorigins.win/raw?url=" + enc, 8000); },
       function () {
-        return fetchJson("https://api.allorigins.win/get?url=" + encodeURIComponent(rapiraApi), 8000).then(function (wrap) {
+        return fetchJson("https://api.allorigins.win/get?url=" + enc, 8000).then(function (wrap) {
           if (!wrap || wrap.contents == null) throw new Error("allorigins empty");
           return extractJsonPayload(wrap.contents);
         });
       },
+      function () { return fetchJson("https://corsproxy.io/?" + enc, 8000); },
+      function () { return fetchJson("https://api.cors.lol/?url=" + enc, 8000); },
       function () { return fetchJson(rapiraApi, 6000); }
     ]).then(function (data) {
       var bid = extractRapiraBid(data);
