@@ -49,13 +49,13 @@ jobs:
                   old = json.loads(path.read_text(encoding="utf-8"))
               except Exception:
                   old = None
-          # Пишем всегда свежий updatedAt; коммит — если bid/ask сменились или зеркалу >10 мин
+          # Коммит если курс сменился ИЛИ зеркалу >3 мин (GH cron часто спит часами — свежий timestamp важен)
           need = True
           if old and abs(float(old.get("bid", 0)) - out["bid"]) < 1e-9 and abs(float(old.get("ask", 0)) - out["ask"]) < 1e-9:
               try:
                   ts = datetime.datetime.fromisoformat(str(old.get("updatedAt", "")).replace("Z", "+00:00"))
                   age = (datetime.datetime.now(datetime.timezone.utc) - ts).total_seconds()
-                  need = age > 600
+                  need = age > 180
               except Exception:
                   need = True
           path.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

@@ -282,7 +282,7 @@
   <div class="grid">
     <label class="field">Выход Rapira, ₽ за 1 USDT (bid)
       <span class="rate-row">
-        <input id="out" type="number" min="0" step="0.01" value="84.26">
+        <input id="out" type="number" min="0" step="0.01" value="86.70">
         <button type="button" id="rapiraRefresh" title="Подтянуть bid USDT/RUB с Rapira">Обновить</button>
       </span>
       <span class="rate-status" id="rapiraStatus">Курс можно подтянуть с Rapira</span>
@@ -395,17 +395,40 @@
   }
   var rapiraLiveOk = false;
   var rapiraLoadBusy = false;
-  function applyRapiraRate(data, fromLabel, statusKind) {
+  var rapiraAppliedAt = 0;
+  var rapiraRetryTimer = null;
+  var RAPIRA_LS_KEY = "arb-rapira-bid-v1";
+  function safePaintCalc() {
+    try { paintCalc(); } catch (e) { /* расчёт не должен ломать курс */ }
+  }
+  function applyRapiraRate(data, fromLabel, statusKind, appliedMs) {
     var bid = extractRapiraBid(data);
     if (!(bid > 0)) throw new Error("В ответе нет bid USDT/RUB");
-    outEl.value = String(Math.round(bid * 100) / 100);
     var when = data.updatedAt ? new Date(data.updatedAt) : new Date();
+    var stamp = appliedMs || (isNaN(when.getTime()) ? Date.now() : when.getTime());
+    /* Не затираем более свежий курс более старым зеркалом. */
+    if (rapiraAppliedAt && stamp + 5000 < rapiraAppliedAt && statusKind !== "ok") {
+      return bid;
+    }
+    outEl.value = String(Math.round(bid * 100) / 100);
+    rapiraAppliedAt = Math.max(rapiraAppliedAt, stamp);
     var timeLabel = isNaN(when.getTime()) ? "" : when.toLocaleString("ru-RU", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
     setRapiraStatus(
       "Rapira bid " + bid.toFixed(2) + " ₽" + (timeLabel ? (" · " + timeLabel) : "") + (fromLabel ? (" · " + fromLabel) : ""),
       statusKind || "ok"
     );
-    paintCalc();
+    if (statusKind === "ok" || statusKind === "warn") {
+      try {
+        localStorage.setItem(RAPIRA_LS_KEY, JSON.stringify({
+          bid: bid,
+          updatedAt: data.updatedAt || new Date(stamp).toISOString(),
+          label: fromLabel || "",
+          savedAt: Date.now()
+        }));
+      } catch (e) {}
+    }
+    safePaintCalc();
+    return bid;
   }
   function rapiraMirrorUrls() {
     /* Без завершающего / относительный rapira-rate.json улетал на github.io/rapira-rate.json → 404 */
@@ -420,26 +443,32 @@
       "https://raw.githubusercontent.com/vadimvasilisa3-dotcom/arbitrage-pvt-calc/main/rapira-rate.json?" + bust
     ];
   }
-  function fetchText(url) {
-    return fetch(url, { cache: "no-store", mode: "cors" }).then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.text();
-    });
+  function fetchText(url, ms) {
+    var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, ms || 9000) : null;
+    return fetch(url, { cache: "no-store", mode: "cors", credentials: "omit", signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.text();
+      })
+      .finally(function () { if (timer) clearTimeout(timer); });
   }
   function extractJsonPayload(text) {
     if (text && typeof text === "object") return text;
     var t = String(text || "").trim();
     if (!t) throw new Error("empty body");
     if (t.charAt(0) === "{") return JSON.parse(t);
-    var i = t.indexOf("{");
+    /* jina.ai отдаёт markdown — вытаскиваем JSON из текста */
+    var i = t.indexOf("{\"data\"");
+    if (i < 0) i = t.indexOf("{\"symbol\"");
+    if (i < 0) i = t.indexOf("{");
     var j = t.lastIndexOf("}");
     if (i >= 0 && j > i) return JSON.parse(t.slice(i, j + 1));
     throw new Error("no JSON in response");
   }
-  function fetchJson(url) {
-    return fetchText(url).then(extractJsonPayload);
+  function fetchJson(url, ms) {
+    return fetchText(url, ms).then(extractJsonPayload);
   }
-  /* Первый успешный из параллельных источников (не ждём мёртвые прокси по цепочке). */
   function firstOk(factories) {
     return new Promise(function (resolve, reject) {
       var left = factories.length;
@@ -466,57 +495,114 @@
       });
     });
   }
-  function fetchRapiraLive() {
+  function fetchRapiraLiveBid() {
     var rapiraApi = "https://api.rapira.net/open/market/rates";
-    /* GH Pages режет CORS на api.rapira.net — live через несколько публичных обходов параллельно. */
+    /* GH Pages режет CORS — live через обходы. jina стабильнее cors.lol/allorigins. */
     return firstOk([
-      function () { return fetchText("https://r.jina.ai/http://api.rapira.net/open/market/rates").then(extractJsonPayload); },
-      function () { return fetchJson("https://api.cors.lol/?url=" + encodeURIComponent(rapiraApi)); },
+      function () { return fetchText("https://r.jina.ai/https://api.rapira.net/open/market/rates", 10000).then(extractJsonPayload); },
+      function () { return fetchText("https://r.jina.ai/http://api.rapira.net/open/market/rates", 10000).then(extractJsonPayload); },
+      function () { return fetchJson("https://api.cors.lol/?url=" + encodeURIComponent(rapiraApi), 8000); },
+      function () { return fetchJson("https://api.allorigins.win/raw?url=" + encodeURIComponent(rapiraApi), 8000); },
       function () {
-        return fetchJson("https://api.allorigins.win/raw?url=" + encodeURIComponent(rapiraApi));
-      },
-      function () {
-        return fetchJson("https://api.allorigins.win/get?url=" + encodeURIComponent(rapiraApi)).then(function (wrap) {
+        return fetchJson("https://api.allorigins.win/get?url=" + encodeURIComponent(rapiraApi), 8000).then(function (wrap) {
           if (!wrap || wrap.contents == null) throw new Error("allorigins empty");
           return extractJsonPayload(wrap.contents);
         });
       },
-      function () { return fetchJson(rapiraApi); }
+      function () { return fetchJson(rapiraApi, 6000); }
     ]).then(function (data) {
       var bid = extractRapiraBid(data);
       if (!(bid > 0)) throw new Error("нет bid");
-      rapiraLiveOk = true;
-      applyRapiraRate({
-        bid: bid,
-        updatedAt: new Date().toISOString(),
-        source: rapiraApi
-      }, "live сейчас", "ok");
+      return { bid: bid, updatedAt: new Date().toISOString(), source: rapiraApi };
     });
+  }
+  function readCachedRapira() {
+    try {
+      var raw = localStorage.getItem(RAPIRA_LS_KEY);
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      if (!(Number(o.bid) > 0)) return null;
+      return o;
+    } catch (e) { return null; }
+  }
+  function ageMinutes(isoOrMs) {
+    var t = typeof isoOrMs === "number" ? isoOrMs : new Date(isoOrMs).getTime();
+    if (isNaN(t)) return 9999;
+    return (Date.now() - t) / 60000;
+  }
+  function scheduleRapiraRetry(ms) {
+    if (rapiraRetryTimer) clearTimeout(rapiraRetryTimer);
+    rapiraRetryTimer = setTimeout(function () {
+      rapiraRetryTimer = null;
+      if (!rapiraLiveOk) loadRapiraRate();
+    }, ms || 12000);
   }
   function loadRapiraRate() {
     if (rapiraLoadBusy) return Promise.resolve();
     rapiraLoadBusy = true;
     if (rapiraRefreshBtn) rapiraRefreshBtn.disabled = true;
     setRapiraStatus("Обновляю курс Rapira (live)…", "");
-    var chain = fetchRapiraLive();
-    rapiraMirrorUrls().forEach(function (url) {
-      chain = chain.catch(function () {
-        return fetchJson(url).then(function (data) {
-          rapiraLiveOk = false;
-          var ageMin = data.updatedAt ? ((Date.now() - new Date(data.updatedAt).getTime()) / 60000) : 999;
-          var stale = ageMin > 10;
-          applyRapiraRate(
-            data,
-            ageMin > 3 ? ("зеркало ~" + Math.round(ageMin) + " мин назад") : "зеркало",
-            stale ? "warn" : "ok"
-          );
-        });
-      });
-    });
-    return chain
-      .catch(function (err) {
+    return fetchRapiraLiveBid()
+      .then(function (data) {
+        rapiraLiveOk = true;
+        applyRapiraRate(data, "live сейчас", "ok", Date.now());
+      })
+      .catch(function () {
         rapiraLiveOk = false;
-        setRapiraStatus("Не удалось обновить: " + (err && err.message ? err.message : "ошибка") + ". Введите курс вручную.", "err");
+        var cache = readCachedRapira();
+        var cacheAge = cache ? ageMinutes(cache.updatedAt || cache.savedAt) : 9999;
+        var mirrors = rapiraMirrorUrls().map(function (url) {
+          return fetchJson(url, 7000).then(function (data) {
+            var bid = extractRapiraBid(data);
+            if (!(bid > 0)) throw new Error("mirror empty");
+            return {
+              bid: bid,
+              updatedAt: data.updatedAt || null,
+              age: ageMinutes(data.updatedAt || 0),
+              source: "mirror"
+            };
+          });
+        });
+        return Promise.allSettled(mirrors).then(function (results) {
+          var best = null;
+          results.forEach(function (r) {
+            if (r.status !== "fulfilled" || !r.value) return;
+            if (!best || r.value.age < best.age) best = r.value;
+          });
+          if (cache && cacheAge < 30 && (!best || cacheAge <= best.age + 0.5)) {
+            applyRapiraRate(
+              { bid: cache.bid, updatedAt: cache.updatedAt || new Date(cache.savedAt).toISOString() },
+              cacheAge <= 3 ? "кэш" : ("кэш ~" + Math.round(cacheAge) + " мин"),
+              cacheAge > 10 ? "warn" : "ok",
+              cache.savedAt || Date.now()
+            );
+            scheduleRapiraRetry(12000);
+            return;
+          }
+          if (best) {
+            var stale = best.age > 8;
+            applyRapiraRate(
+              { bid: best.bid, updatedAt: best.updatedAt },
+              best.age > 2 ? ("зеркало ~" + Math.round(best.age) + " мин назад · жму live") : "зеркало",
+              stale ? "warn" : "ok",
+              best.updatedAt ? new Date(best.updatedAt).getTime() : Date.now()
+            );
+            scheduleRapiraRetry(stale ? 8000 : 15000);
+            return;
+          }
+          if (cache && Number(cache.bid) > 0) {
+            applyRapiraRate(
+              { bid: cache.bid, updatedAt: cache.updatedAt },
+              "кэш (сеть недоступна)",
+              "warn",
+              cache.savedAt || Date.now()
+            );
+            scheduleRapiraRetry(10000);
+            return;
+          }
+          setRapiraStatus("Не удалось обновить курс. Введите Rapira bid вручную и нажмите Обновить.", "err");
+          scheduleRapiraRetry(15000);
+        });
       })
       .then(function () {
         rapiraLoadBusy = false;
@@ -671,6 +757,11 @@
     return list;
   }
   function paintCalc() {
+    try { paintCalcInner(); } catch (err) {
+      if (noteEl) noteEl.textContent = "Ошибка расчёта: " + (err && err.message ? err.message : String(err));
+    }
+  }
+  function paintCalcInner() {
     var rap = readNum(outEl), cAsk = readNum(cAskEl), hAsk = readNum(hAskEl);
     var bxAsk = readNum(bxAskEl);
     var wbAsk = readNum(wbAskEl), wbNet = readNum(wbNetEl);
