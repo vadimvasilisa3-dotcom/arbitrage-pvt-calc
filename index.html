@@ -282,12 +282,21 @@
   <div class="grid">
     <label class="field">Выход Rapira, ₽ за 1 USDT (bid)
       <span class="rate-row">
-        <input id="out" type="number" min="0" step="0.01" value="86.70">
+        <input id="out" type="number" min="0" step="0.01" value="86.88">
         <button type="button" id="rapiraRefresh" title="Подтянуть bid USDT/RUB с Rapira">Обновить</button>
       </span>
       <span class="rate-status" id="rapiraStatus">Курс можно подтянуть с Rapira</span>
     </label>
-    <label class="field">Ask Цифры, ₽<input id="cAsk" type="number" min="0" step="0.01" value="84.18"></label>
+    <label class="field">Ask Цифры (покупка USDT в стакане), ₽
+      <input id="cAsk" type="number" min="0" step="0.01" value="84.18" title="Берите Ask стакана Цифры USDT/RUB, не bid Rapira">
+    </label>
+    <label class="field">Ввод на Цифру
+      <select id="cfDep">
+        <option value="sbp" selected>СБП / карты: 0,7%, макс. 1 500 ₽</option>
+        <option value="flat0">Безнал 0%</option>
+        <option value="bank">Банки РФ 0,15%</option>
+      </select>
+    </label>
     <label class="field">Курс Хайс / Криптохаб, ₽<input id="hAsk" type="number" min="0" step="0.01" value="84.50"></label>
     <label class="field">Ask BYNEX (покупка), ₽<input id="bxAsk" type="number" min="0" step="0.01" value="85.91"></label>
     <label class="field">Курс Whitebird (покупка), ₽<input id="wbAsk" type="number" min="0" step="0.0001" value="81.1738"></label>
@@ -336,7 +345,8 @@
       <li><b>BYNEX межбанк / БНБ / Альфа</b> — ввод 0%; тейкер 0,25%; вывод 5 USDT BEP; Rapira −0,10%.</li>
       <li><b>Whitebird МТС</b> — сервис 2%; сеть из списка; Rapira −0,10%.</li>
       <li><b>Multitransfer</b> — 2%; лимиты 400 000 / раз, 800 000 / сутки, 1 000 000 / мес.</li>
-      <li><b>Цифра / Хайс</b> — как в полях калькулятора; на всех методах продажа Rapira −0,10%.</li>
+      <li><b>Цифра</b> — ввод: СБП 0,7%≤1500 / безнал 0% / банки РФ 0,15%; сделка 1,50%; Ask только из стакана Цифры; вывод Tron/ERC 10 или BitGet; Rapira −0,10%.</li>
+      <li><b>Хайс</b> — как в поле курса; Rapira −0,10%.</li>
       <li>Tradex снят с расчёта.</li>
     </ul>
     <div class="modal-actions"><button type="button" id="closeTariffs">Закрыть</button></div>
@@ -363,9 +373,16 @@
   var wbNetEl = document.getElementById("wbNet");
   var wbNetSelectEl = document.getElementById("wbNetSelect");
   var cfExitEl = document.getElementById("cfExit");
+  var cfDepEl = document.getElementById("cfDep");
   var rapiraStatusEl = document.getElementById("rapiraStatus");
   var rapiraRefreshBtn = document.getElementById("rapiraRefresh");
   var HICE_RAPIRA_SELL_FEE = 0.001;
+  function cifraDepMode() {
+    var k = cfDepEl ? cfDepEl.value : "sbp";
+    if (k === "flat0") return { key: "flat0", label: "безнал 0%", feePct: 0, feeCap: 0 };
+    if (k === "bank") return { key: "bank", label: "банки РФ 0,15%", feePct: 0.0015, feeCap: 0 };
+    return { key: "sbp", label: "СБП 0,7%≤1500", feePct: 0.007, feeCap: 1500 };
+  }
   function setRapiraStatus(text, kind) {
     if (!rapiraStatusEl) return;
     rapiraStatusEl.textContent = text || "";
@@ -814,8 +831,14 @@
       paintChrome();
       return;
     }
-    function cifraFee(p) { return Math.min(p * 0.007, 1500); }
+    var depMode = cifraDepMode();
+    function cifraFee(p) {
+      if (!(depMode.feePct > 0)) return 0;
+      var f = p * depMode.feePct;
+      return depMode.feeCap > 0 ? Math.min(f, depMode.feeCap) : f;
+    }
     function cifraBuy(b) {
+      /* 1,50% после сделки: на покупку идёт bir/1.015 (как в отчёте; в API Цифры бывает 1,90%). */
       var net = b / 1.015;
       return { qty: net / cAsk, trade: b - net };
     }
@@ -1017,7 +1040,7 @@
         }
         cfParts.push(top.amount);
         pushCifra(
-          "Цифра, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · Ask " + fmt(cAsk, 2) + " · " + exitHint + ", свой круг",
+          "Цифра, #" + top.no + " · " + fmt(top.amount, 2) + " ₽ · ввод " + depMode.label + " · Ask " + fmt(cAsk, 2) + " · " + exitHint + ", свой круг",
           [top.amount],
           true
         );
@@ -1119,8 +1142,8 @@
       }
     });
     if (cfParts.length > 1) {
-      pushCifra("Цифра, все · Ask " + fmt(cAsk, 2) + " · " + exitHint + ", 1 вывод", cfParts, true);
-      pushCifra("Цифра, все · Ask " + fmt(cAsk, 2) + " · " + exitHint + ", вывод на каждой", cfParts, false);
+      pushCifra("Цифра, все · ввод " + depMode.label + " · Ask " + fmt(cAsk, 2) + " · " + exitHint + ", 1 вывод (копили USDT)", cfParts, true);
+      pushCifra("Цифра, все · ввод " + depMode.label + " · Ask " + fmt(cAsk, 2) + " · " + exitHint + ", вывод на каждом круге", cfParts, false);
     }
     if (hiParts.length > 1) {
       pushHice("Хайс / Криптохаб, все · курс " + fmt(hAsk, 2) + " · Rapira продажа −0,10%", hiParts);
@@ -1184,7 +1207,17 @@
     } else {
       notes.push("Rapira " + fmt(rap, 2) + " ₽, тейкер −0,10%.");
       if (cfParts.length) {
-        notes.push("Цифра: " + cfParts.length + " пополнения, суммы " + cfParts.map(function (x) { return fmt(x, 2); }).join(" + ") + " ₽, Ask " + fmt(cAsk, 2) + ".");
+        var cfSpread = (rap - cAsk) / rap * 100;
+        if (cfSpread > 1.5) {
+          notes.push(
+            "⚠ Ask Цифры " + fmt(cAsk, 2) + " на " + fmt(cfSpread, 1) +
+            "% ниже Rapira — прибыль завышена. Берите Ask стакана Цифры USDT/RUB прямо сейчас, не старый курс и не bid Rapira."
+          );
+        }
+        notes.push(
+          "Цифра: " + cfParts.length + " пополнения, суммы " + cfParts.map(function (x) { return fmt(x, 2); }).join(" + ") +
+          " ₽; ввод " + depMode.label + "; Ask " + fmt(cAsk, 2) + "; сделка 1,50%."
+        );
         notes.push("Режим вывода: " + exitHint + " (итого " + fmt(exitWd, 2) + " USDT за один круг).");
         if (exitMode.bridge) {
           notes.push("Допуск: депозит Sol/Poly на " + exitMode.bridge + " открыт, зачисление Rapira BEP = 0. Комиссия BEP с Yieldo 19.10.2026.");
@@ -1289,10 +1322,12 @@
   });
   [outEl, cAskEl, hAskEl, bxAskEl, wbAskEl, wbNetEl].forEach(function (el) { el.addEventListener("input", paintCalc); });
   cfExitEl.addEventListener("change", paintCalc);
+  if (cfDepEl) cfDepEl.addEventListener("change", paintCalc);
   /* Старт: рабочие варианты без каши из 7 строк */
   addTopRow(120000, "bynex_sbp");
   addTopRow(100000, "bynex_assist");
   addTopRow(100000, "bynex_bank");
+  addTopRow(170000, "cifra");
   addTopRow(120000, "multitransfer");
   showTab("calc");
   paintCalc();
