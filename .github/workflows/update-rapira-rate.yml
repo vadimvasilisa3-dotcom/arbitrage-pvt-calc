@@ -8,7 +8,8 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/update-rapira-rate.yml"
-      - "scripts/update_rapira_rate.py"
+      - "index.html"
+      - "rapira-rate.json"
 
 concurrency:
   group: rapira-rate-update
@@ -27,9 +28,9 @@ jobs:
       - name: Fetch Rapira open rates
         run: |
           set -euo pipefail
-          curl -fsSL "https://api.rapira.net/open/market/rates" -o /tmp/rapira-rates.json
+          curl -fsSL --retry 5 --retry-delay 2 "https://api.rapira.net/open/market/rates" -o /tmp/rapira-rates.json
           python3 - <<'PY'
-          import json, datetime
+          import json, datetime, pathlib
           with open("/tmp/rapira-rates.json", encoding="utf-8") as f:
               payload = json.load(f)
           row = next(x for x in payload["data"] if x.get("symbol") == "USDT/RUB")
@@ -41,32 +42,48 @@ jobs:
               "updatedAt": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
               "source": "https://api.rapira.net/open/market/rates",
           }
-          with open("rapira-rate.json", "w", encoding="utf-8") as f:
-              json.dump(out, f, ensure_ascii=False, indent=2)
-              f.write("\n")
+          path = pathlib.Path("rapira-rate.json")
+          old = None
+          if path.exists():
+              try:
+                  old = json.loads(path.read_text(encoding="utf-8"))
+              except Exception:
+                  old = None
+          # Пишем всегда свежий updatedAt; коммит — если bid/ask сменились или зеркалу >10 мин
+          need = True
+          if old and abs(float(old.get("bid", 0)) - out["bid"]) < 1e-9 and abs(float(old.get("ask", 0)) - out["ask"]) < 1e-9:
+              try:
+                  ts = datetime.datetime.fromisoformat(str(old.get("updatedAt", "")).replace("Z", "+00:00"))
+                  age = (datetime.datetime.now(datetime.timezone.utc) - ts).total_seconds()
+                  need = age > 600
+              except Exception:
+                  need = True
+          path.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           print(out)
+          print("NEED_COMMIT=" + ("1" if need else "0"))
+          with open("/tmp/need_commit", "w", encoding="utf-8") as f:
+              f.write("1" if need else "0")
           PY
       - name: Commit rate file
         run: |
           git config user.name "rapira-rate-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add rapira-rate.json
-          if git diff --staged --quiet; then
-            echo "No rate change"
+          NEED=$(cat /tmp/need_commit)
+          if [ "$NEED" != "1" ]; then
+            echo "Rate unchanged and fresh — skip commit"
             exit 0
           fi
-          git commit -m "chore: refresh Rapira USDT/RUB bid"
-          # избегаем гонки push с pages/другими job
+          git add rapira-rate.json
+          git commit -m "chore: refresh Rapira USDT/RUB bid" || true
           for i in 1 2 3 4 5; do
             git pull --rebase origin main && git push && exit 0
             sleep 3
             git rebase --abort || true
             git fetch origin main
             git reset --hard origin/main
-            # пересобираем файл после reset
-            curl -fsSL "https://api.rapira.net/open/market/rates" -o /tmp/rapira-rates.json
+            curl -fsSL --retry 5 --retry-delay 2 "https://api.rapira.net/open/market/rates" -o /tmp/rapira-rates.json
             python3 - <<'PY'
-          import json, datetime
+          import json, datetime, pathlib
           with open("/tmp/rapira-rates.json", encoding="utf-8") as f:
               payload = json.load(f)
           row = next(x for x in payload["data"] if x.get("symbol") == "USDT/RUB")
@@ -78,9 +95,7 @@ jobs:
               "updatedAt": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
               "source": "https://api.rapira.net/open/market/rates",
           }
-          with open("rapira-rate.json", "w", encoding="utf-8") as f:
-              json.dump(out, f, ensure_ascii=False, indent=2)
-              f.write("\n")
+          pathlib.Path("rapira-rate.json").write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
           PY
             git add rapira-rate.json
             git commit -m "chore: refresh Rapira USDT/RUB bid" || true
