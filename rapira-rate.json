@@ -1,8 +1,8 @@
 {
   "symbol": "USDT/RUB",
-  "bid": 86.64,
-  "ask": 86.68,
-  "close": 86.68,
-  "updatedAt": "2026-11-08T22:44:15Z",
+  "bid": 86.71,
+  "ask": 86.72,
+  "close": 86.72,
+  "updatedAt": "2026-11-09T01:59:25Z",
   "source": "https://api.rapira.net/open/market/rates"
 }
