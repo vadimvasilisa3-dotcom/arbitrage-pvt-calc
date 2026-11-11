@@ -90,12 +90,6 @@
   }
   .calc-summary .big { font-size: 22px; font-weight: 800; margin: 0 0 6px; }
   .calc-summary .sub { color: var(--muted); font-size: 13px; margin: 0; }
-  .calc-warn {
-    margin: 10px 0 0; padding: 12px 14px; border-radius: 10px; font-size: 14px; line-height: 1.35;
-    border: 1px solid color-mix(in srgb, var(--red) 55%, var(--line));
-    background: color-mix(in srgb, var(--red) 14%, var(--bg)); color: var(--text);
-  }
-  .calc-warn[hidden] { display: none !important; }
   .modal-back {
     display:none; position:fixed; inset:0; z-index:100;
     background:rgba(0,0,0,.55); padding:max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
@@ -139,6 +133,7 @@
   <div>
     <h1>Ввод рублей → покупка USDT → Rapira</h1>
     <p class="muted" id="lead">Ввод → покупка USDT → Rapira. Курс выхода задаётся в калькуляторе (по умолчанию 84,26 ₽). Продажа на Rapira −0,10% на всех методах.</p>
+    <p class="muted" style="margin-top:6px">Мобильная версия (адаптив, без ноутбука): <a href="https://vadimvasilisa3-dotcom.github.io/arbitrage-pvt-calc/" style="color:var(--green)">vadimvasilisa3-dotcom.github.io/arbitrage-pvt-calc</a></p>
   </div>
   <button type="button" id="theme">Светлая тема</button>
 </header>
@@ -322,10 +317,9 @@
       </select>
     </label>
     <label class="field">Комиссия сети Whitebird, USDT<input id="wbNet" type="number" min="0" step="0.00000001" value="0.00889704"></label>
-    <label class="field">Режим вывода Цифры<!-- только direct|bitget -->
+    <label class="field">Режим вывода Цифры
       <select id="cfExit">
-      <option value="direct">1) Напрямую Rapira (Tron/ERC 10)</option>
-      <option value="bitget" selected>2) Через BitGet (Sol/Poly 3,5 → BEP 0,01)</option>
+      <option value="direct" selected>Напрямую Rapira (Tron/ERC 10 USDT)</option>
     </select></label>
   </div>
   <h2>Пополнения</h2>
@@ -333,9 +327,8 @@
   <div class="tops-actions">
     <button type="button" id="addTop">Добавить пополнение</button>
   </div>
-  <p id="calcWarn" class="calc-warn" hidden></p>
   <p id="calcNote" class="muted"></p>
-  <p class="muted phone-hint">На телефоне результат — карточками. Листайте вниз после ввода суммы.</p>
+  <p class="muted phone-hint">Адаптив для телефона. Постоянная ссылка: <a href="https://vadimvasilisa3-dotcom.github.io/arbitrage-pvt-calc/" style="color:var(--green)">github.io/arbitrage-pvt-calc</a>. Результат — карточками, листайте вниз после ввода суммы.</p>
   <div id="calcCards" class="calc-cards" aria-live="polite"></div>
   <div class="wrap">
     <table class="sbp">
@@ -358,7 +351,7 @@
       <li><b>BYNEX межбанк / БНБ / Альфа</b> — ввод 0%; тейкер 0,25%; вывод 5 USDT BEP; Rapira −0,10%.</li>
       <li><b>Whitebird МТС</b> — сервис 2%; сеть из списка; Rapira −0,10%.</li>
       <li><b>Multitransfer</b> — 2%; лимиты 400 000 / раз, 800 000 / сутки, 1 000 000 / мес.</li>
-      <li><b>Цифра</b> — ввод: СБП 0,7%≤1500 / безнал 0% / банки РФ 0,15%; сделка 1,50% или 1,90%; Ask только из стакана на покупку USDT; вывод Tron/ERC 10 или BitGet; Rapira −0,10%. Если Ask сильно ниже Rapira — прибыль завышена.</li>
+      <li><b>Цифра</b> — ввод: СБП 0,7%≤1500 / безнал 0% / банки РФ 0,15%; сделка 1,50% или 1,90%; Ask из стакана на покупку USDT; вывод напрямую Rapira Tron/ERC 10 USDT; Rapira −0,10%.</li>
       <li><b>Хайс</b> — как в поле курса; Rapira −0,10%.</li>
       <li>Tradex снят с расчёта.</li>
     </ul>
@@ -388,7 +381,6 @@
   var cfExitEl = document.getElementById("cfExit");
   var cfDepEl = document.getElementById("cfDep");
   var cfTradeEl = document.getElementById("cfTrade");
-  var calcWarnEl = document.getElementById("calcWarn");
   var rapiraStatusEl = document.getElementById("rapiraStatus");
   var rapiraRefreshBtn = document.getElementById("rapiraRefresh");
   var HICE_RAPIRA_SELL_FEE = 0.001;
@@ -401,16 +393,6 @@
   function cifraTradeMode() {
     var pct = cfTradeEl && Number(cfTradeEl.value) === 1.9 ? 1.9 : 1.5;
     return { pct: pct, mult: 1 + pct / 100, label: pct.toFixed(2).replace(".", ",") + "%" };
-  }
-  function setCalcWarn(text) {
-    if (!calcWarnEl) return;
-    if (!text) {
-      calcWarnEl.hidden = true;
-      calcWarnEl.textContent = "";
-      return;
-    }
-    calcWarnEl.hidden = false;
-    calcWarnEl.textContent = text;
   }
   function setRapiraStatus(text, kind) {
     if (!rapiraStatusEl) return;
@@ -697,21 +679,18 @@
   syncWbNetFromSelect();
   var topsList = document.getElementById("topsList");
   var addTopBtn = document.getElementById("addTop");
-  /* Yieldo 19.10.2026: Bitget BEP20 0,01. Цифра Sol/Poly 3,5; Tron/ERC 10. */
+  /* Цифра: вывод напрямую Rapira Tron/ERC 10 USDT. BitGet снят. */
   var BRIDGE = {
-    direct: { label: "напрямую Rapira", hop1: 10, hop2: 0, bridge: "" },
-    bitget: { label: "BitGet", hop1: 3.5, hop2: 0.01, bridge: "BitGet" }
+    direct: { label: "напрямую Rapira", hop1: 10, hop2: 0, bridge: "" }
   };
   function cifraExitMode() {
-    var k = cfExitEl.value;
-    return BRIDGE[k] || BRIDGE.direct;
+    return BRIDGE.direct;
   }
   function cifraWdPerRound(mode) {
     return mode.hop1 + mode.hop2;
   }
   function cifraExitHint(mode) {
-    if (!mode.bridge) return "Tron/ERC " + fmt(mode.hop1, 0) + " USDT → Rapira";
-    return "Sol/Poly " + fmt(mode.hop1, 1) + " → " + mode.bridge + " BEP " + fmt(mode.hop2, 2) + " → Rapira";
+    return "Tron/ERC " + fmt(mode.hop1, 0) + " USDT → Rapira";
   }
   var bodyEl = document.getElementById("calcBody");
   var cardsEl = document.getElementById("calcCards");
@@ -830,7 +809,6 @@
     var exitHint = cifraExitHint(exitMode);
     bodyEl.innerHTML = "";
     hideSummary();
-    setCalcWarn("");
     if (!(rap > 0)) {
       noteEl.textContent = "Нужен курс выхода Rapira больше нуля.";
       paintChrome();
@@ -1239,26 +1217,11 @@
     } else {
       notes.push("Rapira " + fmt(rap, 2) + " ₽, тейкер −0,10%.");
       if (cfParts.length) {
-        var cfSpread = (rap - cAsk) / rap * 100;
-        var effBuy = cAsk * tradeMode.mult;
-        if (cfSpread > 1.5) {
-          var warnText =
-            "Прибыль завышена: Ask Цифры " + fmt(cAsk, 2) + " ₽ на " + fmt(cfSpread, 1) +
-            "% ниже Rapira " + fmt(rap, 2) + " ₽. В поле нужен Ask стакана на ПОКУПКУ USDT (не bid и не вчерашний курс). " +
-            "С комиссией сделки " + tradeMode.label + " эффективная покупка ≈ " + fmt(effBuy, 2) +
-            " ₽/USDT, продажа Rapira ≈ " + fmt(rap * (1 - HICE_RAPIRA_SELL_FEE), 2) + " ₽.";
-          setCalcWarn(warnText);
-          notes.push(warnText);
-        }
         notes.push(
           "Цифра: " + cfParts.length + " пополнения, суммы " + cfParts.map(function (x) { return fmt(x, 2); }).join(" + ") +
-          " ₽; ввод " + depMode.label + "; Ask " + fmt(cAsk, 2) + "; сделка " + tradeMode.label +
-          "; эфф. покупка ≈ " + fmt(effBuy, 2) + " ₽/USDT."
+          " ₽; ввод " + depMode.label + "; Ask " + fmt(cAsk, 2) + "; сделка " + tradeMode.label + "."
         );
         notes.push("Режим вывода: " + exitHint + " (итого " + fmt(exitWd, 2) + " USDT за один круг).");
-        if (exitMode.bridge) {
-          notes.push("Допуск: депозит Sol/Poly на " + exitMode.bridge + " открыт, зачисление Rapira BEP = 0. Комиссия BEP с Yieldo 19.10.2026.");
-        }
       }
       if (hiParts.length) {
         notes.push("Хайс (АО КБ «Хайс» / Криптохаб): " + hiParts.length + " пополнения, суммы " + hiParts.map(function (x) { return fmt(x, 2); }).join(" + ") + " ₽, курс покупки " + fmt(hAsk, 2) + " ₽, ввод 0%, вывод сети 0, продажа на Rapira −0,10%.");
@@ -1342,13 +1305,11 @@
         var bestRow = rows[bestI];
         var pClass = bestRow.profit < 0 ? "neg" : "pos";
         var pText = (bestRow.profit > 0 ? "+" : "") + fmt(bestRow.profit, 2) + " ₽";
-        var spreadBad = needCifra && cAsk > 0 && rap > 0 && ((rap - cAsk) / rap * 100 > 1.5);
         summaryEl.hidden = false;
         summaryEl.innerHTML =
           "<p class=\"big " + pClass + "\">Итог: " + pText + "</p>" +
           "<p class=\"sub\">Лучший вариант: " + bestRow.name + "</p>" +
-          "<p class=\"sub\">Выход " + fmt(bestRow.cash, 2) + " ₽ · на Rapira " + fmt(bestRow.arrive, 4) + " USDT · Rapira " + fmt(rap, 2) + " ₽</p>" +
-          (spreadBad ? "<p class=\"sub\" style=\"color:var(--red)\">Цифры Ask сильно ниже Rapira — это не рыночная выручка, проверьте Ask стакана.</p>" : "");
+          "<p class=\"sub\">Выход " + fmt(bestRow.cash, 2) + " ₽ · на Rapira " + fmt(bestRow.arrive, 4) + " USDT · Rapira " + fmt(rap, 2) + " ₽</p>";
       } else {
         hideSummary();
       }
