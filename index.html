@@ -11,16 +11,52 @@
 <link rel="manifest" href="manifest.webmanifest">
 <style>
   :root {
-    --bg:#0e1116; --card:#171c24; --line:#303846; --text:#e8eef6; --muted:#93a0b0;
+    --bg:#0a0f14; --card:rgba(23,28,36,.92); --line:#303846; --text:#e8eef6; --muted:#93a0b0;
     --green:#3dd68c; --red:#ff6b6b; --ghost:#222833;
+    --crypto-grid: rgba(61,214,140,.06);
+    --crypto-glow: rgba(38,161,123,.18);
   }
   html[data-theme="light"] {
-    --bg:#f4f7fb; --card:#fff; --line:#d5deea; --text:#172033; --muted:#5d6b7c;
+    --bg:#eef3f8; --card:rgba(255,255,255,.94); --line:#d5deea; --text:#172033; --muted:#5d6b7c;
     --green:#0d8a45; --red:#c42323; --ghost:#eef2f6;
+    --crypto-grid: rgba(13,138,69,.07);
+    --crypto-glow: rgba(38,161,123,.10);
   }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.4 "Segoe UI", system-ui, sans-serif; font-variant-numeric:tabular-nums; }
-  header, main, footer { width:min(1500px, calc(100% - 24px)); margin:0 auto; }
+  body {
+    margin:0;
+    color:var(--text);
+    font:16px/1.4 "Segoe UI", system-ui, sans-serif;
+    font-variant-numeric:tabular-nums;
+    min-height:100vh;
+    background-color:var(--bg);
+    background-image:
+      radial-gradient(ellipse 90% 55% at 12% -8%, var(--crypto-glow), transparent 55%),
+      radial-gradient(ellipse 70% 45% at 92% 8%, rgba(247,147,26,.10), transparent 50%),
+      radial-gradient(ellipse 60% 40% at 78% 92%, rgba(98,126,234,.10), transparent 55%),
+      radial-gradient(ellipse 50% 35% at 8% 88%, rgba(20,241,149,.07), transparent 50%),
+      linear-gradient(var(--crypto-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--crypto-grid) 1px, transparent 1px),
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='440' height='320' viewBox='0 0 440 320'%3E%3Cg fill='none' stroke-opacity='0.13' stroke-width='1.7'%3E%3C!-- BTC --%3E%3Cg transform='translate(24 24)' stroke='%23f7931a'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M15 14h10c3.3 0 6 2 6 5s-2.7 5-6 5h-4m4 0h5c3.3 0 6 2.2 6 5.2S33.3 34 30 34H15M20 10v4m6-4v4M20 34v4m6-4v4' stroke-linecap='round'/%3E%3C/g%3E%3C!-- ETH --%3E%3Cg transform='translate(140 28)' stroke='%23627eea'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M22 8l10 14-10 6-10-6zm0 28V22' stroke-linejoin='round'/%3E%3C/g%3E%3C!-- USDT --%3E%3Cg transform='translate(256 24)' stroke='%2326a17b'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M14 16h16M22 16v18M16 24h12' stroke-linecap='round'/%3E%3C/g%3E%3C!-- BNB --%3E%3Cg transform='translate(372 28)' stroke='%23f3ba2f'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M22 10l4 4-4 4-4-4zm0 12l4 4-4 4-4-4zm-8-4l4 4-4 4-4-4zm16 0l4 4-4 4-4-4z' stroke-linejoin='round'/%3E%3C/g%3E%3C!-- SOL --%3E%3Cg transform='translate(80 138)' stroke='%2314f195'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M12 16h16l-4 5H12zm4 7h16l-4 5H12z' stroke-linejoin='round'/%3E%3C/g%3E%3C!-- XRP --%3E%3Cg transform='translate(210 142)' stroke='%23c9d1e3'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M12 14l10 10 10-10M12 30l10-10 10 10' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3C!-- DOGE --%3E%3Cg transform='translate(40 240)' stroke='%23c2a633'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M16 14h8c5 0 8 3.5 8 8s-3 8-8 8h-8zm0 8h14' stroke-linecap='round'/%3E%3C/g%3E%3C!-- ADA --%3E%3Cg transform='translate(300 236)' stroke='%230033ad'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Ccircle cx='22' cy='22' r='3'/%3E%3Ccircle cx='22' cy='12' r='2'/%3E%3Ccircle cx='30' cy='27' r='2'/%3E%3Ccircle cx='14' cy='27' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-size:
+      auto, auto, auto, auto,
+      48px 48px, 48px 48px,
+      440px 320px;
+    background-attachment: fixed;
+  }
+  html[data-theme="light"] body {
+    background-image:
+      radial-gradient(ellipse 90% 55% at 12% -8%, var(--crypto-glow), transparent 55%),
+      radial-gradient(ellipse 70% 45% at 92% 8%, rgba(247,147,26,.08), transparent 50%),
+      radial-gradient(ellipse 60% 40% at 78% 92%, rgba(98,126,234,.08), transparent 55%),
+      radial-gradient(ellipse 50% 35% at 8% 88%, rgba(243,186,47,.08), transparent 50%),
+      linear-gradient(var(--crypto-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--crypto-grid) 1px, transparent 1px),
+      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='440' height='320' viewBox='0 0 440 320'%3E%3Cg fill='none' stroke-opacity='0.16' stroke-width='1.7'%3E%3Cg transform='translate(24 24)' stroke='%23f7931a'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M15 14h10c3.3 0 6 2 6 5s-2.7 5-6 5h-4m4 0h5c3.3 0 6 2.2 6 5.2S33.3 34 30 34H15M20 10v4m6-4v4M20 34v4m6-4v4' stroke-linecap='round'/%3E%3C/g%3E%3Cg transform='translate(140 28)' stroke='%23627eea'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M22 8l10 14-10 6-10-6zm0 28V22' stroke-linejoin='round'/%3E%3C/g%3E%3Cg transform='translate(256 24)' stroke='%2326a17b'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M14 16h16M22 16v18M16 24h12' stroke-linecap='round'/%3E%3C/g%3E%3Cg transform='translate(372 28)' stroke='%23f3ba2f'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M22 10l4 4-4 4-4-4zm0 12l4 4-4 4-4-4zm-8-4l4 4-4 4-4-4zm16 0l4 4-4 4-4-4z' stroke-linejoin='round'/%3E%3C/g%3E%3Cg transform='translate(80 138)' stroke='%2314f195'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M12 16h16l-4 5H12zm4 7h16l-4 5H12z' stroke-linejoin='round'/%3E%3C/g%3E%3Cg transform='translate(210 142)' stroke='%23555a7a'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M12 14l10 10 10-10M12 30l10-10 10 10' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3Cg transform='translate(40 240)' stroke='%23c2a633'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Cpath d='M16 14h8c5 0 8 3.5 8 8s-3 8-8 8h-8zm0 8h14' stroke-linecap='round'/%3E%3C/g%3E%3Cg transform='translate(300 236)' stroke='%230033ad'%3E%3Ccircle cx='22' cy='22' r='18'/%3E%3Ccircle cx='22' cy='22' r='3'/%3E%3Ccircle cx='22' cy='12' r='2'/%3E%3Ccircle cx='30' cy='27' r='2'/%3E%3Ccircle cx='14' cy='27' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  header, main, footer { width:min(1500px, calc(100% - 24px)); margin:0 auto; position:relative; z-index:1; }
+  nav.tabs { position:relative; z-index:2; }
+  section, .calc-summary, .modal { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
   header { padding:22px 0 8px; display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
   h1 { font-size:26px; margin:0 0 6px; }
   h2 { font-size:20px; margin:18px 0 10px; }
@@ -123,7 +159,7 @@
     #panel-calc .wrap { display:none; }
     .calc-cards { display:flex; }
     .phone-hint { display:block; margin:0 0 10px; }
-    body { padding-bottom:max(24px, env(safe-area-inset-bottom)); }
+    body { padding-bottom:max(24px, env(safe-area-inset-bottom)); background-attachment:scroll; }
     #theme { min-height:44px; }
   }
 </style>
