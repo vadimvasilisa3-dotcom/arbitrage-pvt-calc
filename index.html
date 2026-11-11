@@ -29,11 +29,10 @@
     font:16px/1.4 "Segoe UI", system-ui, sans-serif;
     font-variant-numeric:tabular-nums;
     min-height:100vh;
-    background-color:var(--bg);
-    background-image:url("crypto-bg.svg?v=3");
-    background-repeat:repeat;
-    background-size:440px 320px;
+    background:#0a0e17;
   }
+  .coins { display:flex; gap:12px; flex-wrap:wrap; align-items:center; width:min(1500px, calc(100% - 24px)); margin:8px auto 0; }
+  .coins img { width:34px; height:34px; filter:invert(1); opacity:.9; }
   header, main, footer { width:min(1500px, calc(100% - 24px)); margin:0 auto; }
   header { padding:22px 0 8px; display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
   h1 { font-size:26px; margin:0 0 6px; }
@@ -151,6 +150,16 @@
   </div>
   <button type="button" id="theme">Светлая тема</button>
 </header>
+<div class="coins" aria-hidden="true">
+  <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/bitcoin.svg" alt="BTC">
+  <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/ethereum.svg" alt="ETH">
+  <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/tether.svg" alt="USDT">
+  <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/bnb.svg" alt="BNB">
+  <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/solana.svg" alt="SOL">
+  <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/xrp.svg" alt="XRP">
+  <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/dogecoin.svg" alt="DOGE">
+  <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/cardano.svg" alt="ADA">
+</div>
 <nav class="tabs">
   <button type="button" id="tabCalc" class="on">Калькулятор</button>
   <button type="button" id="tabReport">Отчёт</button>
