@@ -10,13 +10,9 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
