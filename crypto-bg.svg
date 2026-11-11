@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="320" viewBox="0 0 440 320">
+  <g fill="none" stroke-opacity="0.32" stroke-width="2">
+    <g transform="translate(24 24)" stroke="#f7931a">
+      <circle cx="22" cy="22" r="18"/>
+      <path d="M15 14h10c3.3 0 6 2 6 5s-2.7 5-6 5h-4m4 0h5c3.3 0 6 2.2 6 5.2S33.3 34 30 34H15M20 10v4m6-4v4M20 34v4m6-4v4" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(140 28)" stroke="#627eea">
+      <circle cx="22" cy="22" r="18"/>
+      <path d="M22 8l10 14-10 6-10-6zm0 28V22" stroke-linejoin="round"/>
+    </g>
+    <g transform="translate(256 24)" stroke="#26a17b">
+      <circle cx="22" cy="22" r="18"/>
+      <path d="M14 16h16M22 16v18M16 24h12" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(372 28)" stroke="#f3ba2f">
+      <circle cx="22" cy="22" r="18"/>
+      <path d="M22 10l4 4-4 4-4-4zm0 12l4 4-4 4-4-4zm-8-4l4 4-4 4-4-4zm16 0l4 4-4 4-4-4z" stroke-linejoin="round"/>
+    </g>
+    <g transform="translate(80 138)" stroke="#14f195">
+      <circle cx="22" cy="22" r="18"/>
+      <path d="M12 16h16l-4 5H12zm4 7h16l-4 5H12z" stroke-linejoin="round"/>
+    </g>
+    <g transform="translate(210 142)" stroke="#c9d1e3">
+      <circle cx="22" cy="22" r="18"/>
+      <path d="M12 14l10 10 10-10M12 30l10-10 10 10" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g transform="translate(40 240)" stroke="#c2a633">
+      <circle cx="22" cy="22" r="18"/>
+      <path d="M16 14h8c5 0 8 3.5 8 8s-3 8-8 8h-8zm0 8h14" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(300 236)" stroke="#0033ad">
+      <circle cx="22" cy="22" r="18"/>
+      <circle cx="22" cy="22" r="3"/>
+      <circle cx="22" cy="12" r="2"/>
+      <circle cx="30" cy="27" r="2"/>
+      <circle cx="14" cy="27" r="2"/>
+    </g>
+  </g>
+</svg>
