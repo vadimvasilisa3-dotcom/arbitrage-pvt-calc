@@ -573,8 +573,17 @@
   }
   function fetchRapiraLiveBid() {
     var rapiraApi = "https://api.rapira.net/open/market/rates";
-    /* Прокси (jina, allorigins, corsproxy) отвечают 401/403 или висят. Прямой запрос — единственный live. */
-    return fetchJson(rapiraApi, 5000).then(function (data) {
+    var enc = encodeURIComponent(rapiraApi);
+    /* Сайт github.io не пускает api.rapira.net (CORS только для rapira.net). allorigins отдаёт тот же JSON. */
+    return firstOk([
+      function () {
+        return fetchJson("https://api.allorigins.win/get?url=" + enc, 12000).then(function (wrap) {
+          if (!wrap || wrap.contents == null) throw new Error("allorigins empty");
+          return extractJsonPayload(wrap.contents);
+        });
+      },
+      function () { return fetchJson(rapiraApi, 5000); }
+    ]).then(function (data) {
       var bid = extractRapiraBid(data);
       if (!(bid > 0)) throw new Error("нет bid");
       return { bid: bid, updatedAt: new Date().toISOString(), source: rapiraApi };
@@ -633,16 +642,6 @@
             if (r.status !== "fulfilled" || !r.value) return;
             if (!best || r.value.age < best.age) best = r.value;
           });
-          if (cache && cacheAge < 30 && (!best || cacheAge <= best.age + 0.5)) {
-            applyRapiraRate(
-              { bid: cache.bid, updatedAt: cache.updatedAt || new Date(cache.savedAt).toISOString() },
-              cacheAge <= 3 ? "кэш" : ("кэш ~" + Math.round(cacheAge) + " мин"),
-              cacheAge > 10 ? "warn" : "ok",
-              cache.savedAt || Date.now()
-            );
-            scheduleRapiraRetry(12000);
-            return;
-          }
           if (best) {
             var stale = best.age > 720;
             applyRapiraRate(
@@ -1369,7 +1368,7 @@
   if (rapiraRefreshBtn) rapiraRefreshBtn.addEventListener("click", loadRapiraRate);
   loadRapiraRate();
   /* каждые 30с: live (гонка прокси) → иначе зеркало; жёлтый статус если зеркало старше 10 мин */
-  setInterval(function () { loadRapiraRate(); }, 30000);
+  setInterval(function () { loadRapiraRate(); }, 15000);
   btn.addEventListener("click", function () {
     var light = root.getAttribute("data-theme") === "light";
     if (light) root.removeAttribute("data-theme"); else root.setAttribute("data-theme", "light");
