@@ -10,7 +10,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="calc-build" content="crypto-bg-cycle-v4-20261112">
+<meta name="calc-build" content="rapira-fresh-v5-20261117">
 <title>Калькулятор · RU → USDT → Rapira</title>
 <link rel="manifest" href="manifest.webmanifest?v=crypto-bg-v3">
 <style>
@@ -507,16 +507,16 @@
     return bid;
   }
   function rapiraMirrorUrls() {
-    /* Без завершающего / относительный rapira-rate.json улетал на github.io/rapira-rate.json → 404 */
+    /* raw/jsDelivr обновляются с коммитом бота. Pages часто залипает на старом артефакте. */
     var path = location.pathname || "/";
     if (/\/index\.html$/i.test(path)) path = path.replace(/\/index\.html$/i, "/");
     else if (!/\/$/.test(path)) path += "/";
     var bust = "t=" + Date.now();
     return [
-      location.origin + path + "rapira-rate.json?" + bust,
+      "https://raw.githubusercontent.com/vadimvasilisa3-dotcom/arbitrage-pvt-calc/main/rapira-rate.json?" + bust,
       "https://cdn.jsdelivr.net/gh/vadimvasilisa3-dotcom/arbitrage-pvt-calc@main/rapira-rate.json?" + bust,
-      "https://vadimvasilisa3-dotcom.github.io/arbitrage-pvt-calc/rapira-rate.json?" + bust,
-      "https://raw.githubusercontent.com/vadimvasilisa3-dotcom/arbitrage-pvt-calc/main/rapira-rate.json?" + bust
+      location.origin + path + "rapira-rate.json?" + bust,
+      "https://vadimvasilisa3-dotcom.github.io/arbitrage-pvt-calc/rapira-rate.json?" + bust
     ];
   }
   function fetchText(url, ms) {
@@ -573,17 +573,8 @@
   }
   function fetchRapiraLiveBid() {
     var rapiraApi = "https://api.rapira.net/open/market/rates";
-    var enc = encodeURIComponent(rapiraApi);
-    /* Сайт github.io не пускает api.rapira.net (CORS только для rapira.net). allorigins отдаёт тот же JSON. */
-    return firstOk([
-      function () {
-        return fetchJson("https://api.allorigins.win/get?url=" + enc, 12000).then(function (wrap) {
-          if (!wrap || wrap.contents == null) throw new Error("allorigins empty");
-          return extractJsonPayload(wrap.contents);
-        });
-      },
-      function () { return fetchJson(rapiraApi, 5000); }
-    ]).then(function (data) {
+    /* Прокси (jina, allorigins, corsproxy) отвечают 401/403 или висят. Прямой запрос — единственный live. */
+    return fetchJson(rapiraApi, 5000).then(function (data) {
       var bid = extractRapiraBid(data);
       if (!(bid > 0)) throw new Error("нет bid");
       return { bid: bid, updatedAt: new Date().toISOString(), source: rapiraApi };
@@ -623,7 +614,6 @@
       .catch(function () {
         rapiraLiveOk = false;
         var cache = readCachedRapira();
-        var cacheAge = cache ? ageMinutes(cache.updatedAt || cache.savedAt) : 9999;
         var mirrors = rapiraMirrorUrls().map(function (url) {
           return fetchJson(url, 7000).then(function (data) {
             var bid = extractRapiraBid(data);
@@ -643,14 +633,14 @@
             if (!best || r.value.age < best.age) best = r.value;
           });
           if (best) {
-            var stale = best.age > 720;
+            var stale = best.age > 30;
             applyRapiraRate(
               { bid: best.bid, updatedAt: best.updatedAt },
-              best.age > 20 ? ("файл ~" + Math.round(best.age) + " мин назад") : "онлайн",
+              stale ? ("файл ~" + Math.round(best.age) + " мин назад") : "онлайн",
               stale ? "warn" : "ok",
               best.updatedAt ? new Date(best.updatedAt).getTime() : Date.now()
             );
-            scheduleRapiraRetry(stale ? 20000 : 60000);
+            scheduleRapiraRetry(stale ? 15000 : 45000);
             return;
           }
           if (cache && Number(cache.bid) > 0) {
@@ -1368,7 +1358,7 @@
   if (rapiraRefreshBtn) rapiraRefreshBtn.addEventListener("click", loadRapiraRate);
   loadRapiraRate();
   /* каждые 30с: live (гонка прокси) → иначе зеркало; жёлтый статус если зеркало старше 10 мин */
-  setInterval(function () { loadRapiraRate(); }, 15000);
+  setInterval(function () { loadRapiraRate(); }, 30000);
   btn.addEventListener("click", function () {
     var light = root.getAttribute("data-theme") === "light";
     if (light) root.removeAttribute("data-theme"); else root.setAttribute("data-theme", "light");

@@ -8,8 +8,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/update-rapira-rate.yml"
-      - "index.html"
-      - "rapira-rate.json"
+      - "scripts/update_rapira_rate.py"
 
 concurrency:
   group: rapira-rate-update
